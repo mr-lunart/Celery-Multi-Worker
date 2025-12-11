@@ -1,0 +1,2 @@
+celery[sqs,msgpack]
+python-dotenv
