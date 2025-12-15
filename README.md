@@ -11,8 +11,10 @@ To run this project :
 
 
 ## Install Redis
+**For Windows (RPM):**
+the easiest way to install redis on windows
 
-For Linux (RPM):
+**For Linux (RPM):**
 1. Create the file /etc/yum.repos.d/redis.repo with the following contents.
 For Rocky Linux 9 and AlmaLinux 9
 ```
