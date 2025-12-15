@@ -12,6 +12,7 @@ To run this project :
 
 ## Install Redis
 **For Windows (RPM):**
+
 The easiest way to install redis on windows is using [Memurai](https://redis.io/partners/memurai/) Development edition.
 For easy managing and develop with redis database, use [Redis Insight](https://redis.io/insight/)
 
