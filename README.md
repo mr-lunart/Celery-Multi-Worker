@@ -1,6 +1,6 @@
 # Celery Multi Worker
 
-This POC is designed to manage distributed task using celery framework.
+This POC is designed to manage distributed task using celery framework. The task consists of pulling queue tasks from SQS, creating a JSON file, and deleting the task from queue.
 
 To run this project :
 1. Install Redis
