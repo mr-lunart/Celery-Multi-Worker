@@ -1,2 +1,3 @@
-celery[sqs,msgpack]
+celery[sqs,msgpack,redis]
+boto3
 python-dotenv
