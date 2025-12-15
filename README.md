@@ -12,7 +12,18 @@ To run this project :
 
 ## Install Redis
 **For Windows (RPM):**
-the easiest way to install redis on windows
+The easiest way to install redis on windows is using [Memurai](https://redis.io/partners/memurai/) Development edition.
+For easy managing and develop with redis database, use [Redis Insight](https://redis.io/insight/)
+
+Ensure the port used in Memurai matches the one defined in scrapper.py after installation.
+the url format should be
+```
+redis://:password@hostname:port/db_number
+```
+```python
+app.conf.broker_url = 'redis://127.0.0.1:6379/0'
+app.conf.result_backend = 'redis://127.0.0.1:6379/0'
+```
 
 **For Linux (RPM):**
 1. Create the file /etc/yum.repos.d/redis.repo with the following contents.
