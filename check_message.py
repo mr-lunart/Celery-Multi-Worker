@@ -15,34 +15,33 @@ aws_client = boto3.client(
 )
 
 # send message
-message_body = json.dumps({
-            "param1" : "hello world",
-            "param2" : "nice to meet you",
-            "param3" : "goodnight",
-        })
-response = aws_client.send_message(
-            QueueUrl=SQS_URL,
-            MessageBody=message_body,
-            MessageGroupId="test"
-        )
+# message_body = json.dumps({
+#             "filename" : "json_file.json",
+#             "id" : "001",
+#         })
+# response = aws_client.send_message(
+#             QueueUrl=SQS_URL,
+#             MessageBody=message_body,
+#             MessageGroupId="test"
+#         )
 # delete message
 def delete_message():
     response = aws_client.receive_message(
         QueueUrl=SQS_URL,
-        MaxNumberOfMessages=1,
-        MessageSystemAttributeNames=['MessageGroupId'],
+        MaxNumberOfMessages=10,
+        MessageSystemAttributeNames=['MessageGroupId','VisibilityTimeout'],
         WaitTimeSeconds=10 # Long polling
     )
     messages = response.get('Messages', [])
     if messages:
-        message = messages[0]
-        receipt_handle = message['ReceiptHandle']
-        group_id = message['Attributes']['MessageGroupId']
-        message_body = message['Body']   
-        delete_response = aws_client.delete_message(
-            QueueUrl=SQS_URL,
-            ReceiptHandle=receipt_handle
-        )
+        for message in messages:
+            receipt_handle = message['ReceiptHandle']
+            group_id = message['Attributes']['MessageGroupId']
+            message_body = message['Body']   
+            delete_response = aws_client.delete_message(
+                QueueUrl=SQS_URL,
+                ReceiptHandle=receipt_handle
+            )
     else:
         print("found no messages")
 
