@@ -51,3 +51,34 @@ sudo rpm --import /tmp/redis.key
 sudo yum install redis
 ```
 
+## Install PIP Requirements
+Install python package dependences
+```bash
+pip install -R requirements.txt
+```
+
+## Prepare .env
+```.env
+AWS_ACCESS_KEY_ID = A**************
+AWS_SECRET_ACCESS_KEY = x**************
+```
+
+## Run Celery Worker
+Run celery worker first. there 2 celery worker, the first worker handle 2 task pulling data from sqs and remove it after processing. the seconds is for processing step and call the first worker after finish processing. the first worker run with 10 concurrency and the second run with 20 concurrency
+```
+--loglevel=INFO
+```
+for debugging you can add this command for detailed logging
+```bash
+celery -A scrapper worker -Q consumer_sqs --concurrency=10 --pool=threads -n worker1@%h
+celery -A scrapper worker --loglevel=INFO --concurrency=20 --pool=threads -n worker2@%h
+```
+
+<img width="1424" height="570" alt="image" src="https://github.com/user-attachments/assets/a296b312-21a5-41fd-b12e-e1b733aad58b" />
+
+
+## Start Task Starter
+run starter.py, this code would sent 20 queue of task to sqs and kickstart celery worker
+```bash
+python starter.py
+```
