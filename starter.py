@@ -16,8 +16,8 @@ aws_client = boto3.client(
 )
 
 message_id = "001"
-total_file = 20
-for i in range(total_file):
+total_club = 100
+for i in range(total_club):
     filename = f"json_file_{i}.json"
     message_body_dict = {
         "filename": filename,
@@ -30,7 +30,8 @@ for i in range(total_file):
         MessageGroupId="test" 
     )
 
-for i in range(total_file):
+total_kick = 10
+for i in range(total_kick):
     consumer_sqs.apply_async(
         routing_key="tasks.consumer_sqs",
         queue="consumer_sqs"
