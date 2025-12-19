@@ -15,15 +15,16 @@ aws_client = boto3.client(
 )
 
 # send message
-# message_body = json.dumps({
-#             "filename" : "json_file.json",
-#             "id" : "001",
-#         })
-# response = aws_client.send_message(
-#             QueueUrl=SQS_URL,
-#             MessageBody=message_body,
-#             MessageGroupId="test"
-#         )
+def add_message():
+    message_body = json.dumps({
+                "filename" : "json_file.json",
+                "id" : "001",
+            })
+    response = aws_client.send_message(
+                QueueUrl=SQS_URL,
+                MessageBody=message_body,
+                MessageGroupId="test"
+            )
 # delete message
 def delete_message():
     response = aws_client.receive_message(
@@ -45,4 +46,5 @@ def delete_message():
     else:
         print("found no messages")
 
-delete_message()
+# delete_message()
+add_message()

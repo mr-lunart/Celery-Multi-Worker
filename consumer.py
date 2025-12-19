@@ -1,14 +1,18 @@
+import boto3
+import asyncio
+import redis
+
+from logger_consumer import setup_logger
+
 import os
 import json
-import boto3
-import datetime
 
 from celery import Celery
 from dotenv import load_dotenv
 
 load_dotenv() 
 
-SQS_URL = "https://sqs.eu-west-1.amazonaws.com/820866026690/phokus-benchmarking-queue"
+logger = setup_logger()
 
 aws_client = boto3.client(
     service_name="sqs",
@@ -18,19 +22,17 @@ aws_client = boto3.client(
 )
 
 app = Celery()
-app.conf.broker_url = 'redis://127.0.0.1:6379/0'
-app.conf.result_backend = 'redis://127.0.0.1:6379/0'
+app.conf.broker_url=os.getenv("CELERY_REDIS")
+app.conf.result_backend=os.getenv("CELERY_REDIS")
 
-@app.task(bind=True)
-def start(event_body, receipt_handle:str, message_group_id:str):
+# create entry point for celery worker
+@app.task(name='start',bind=True)
+def gateway(self, event_body:dict):
     return
 
-def consumer_sqs():
-    now = datetime.datetime.now()
-    start_time = now.strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Start consume::{start_time}")
+def consumer_sqs(foldername:str):
     response = aws_client.receive_message(
-        QueueUrl=SQS_URL,
+        QueueUrl=os.getenv("SQS_URL"),
         MaxNumberOfMessages=1,
         MessageSystemAttributeNames=['MessageGroupId'],
         WaitTimeSeconds=10 # Long polling
@@ -38,25 +40,80 @@ def consumer_sqs():
     messages = response.get('Messages', [])
     try:
         if messages:
-            print("Found message, sending task to worker...")
             message = messages[0]
-            group_id = message['Attributes']['MessageGroupId']
             event_body = json.loads(message['Body'])
-            receipt_handle = message['ReceiptHandle']  
-            start.apply_async(kwargs={
-                'event_body':event_body,
-                'receipt_handle':receipt_handle,
-                'message_group_id':group_id}
-            )
-            return
+            event_body["receipt_handle"]=message['ReceiptHandle']
+            event_body["group_id"]=message['Attributes']['MessageGroupId']
+            message_pathfile = add_sqs_message(foldername=foldername,data=event_body)
+            logger.info(f"Found message, sending task {message_pathfile} to worker...")
+            if message_pathfile:
+                event_body["message_pathfile"]=message_pathfile
+                gateway.apply_async(kwargs={'event_body':event_body})
+                return
+            else:
+                raise Exception("Failed adding message")
         else:
-            now = datetime.datetime.now()
-            end_time = now.strftime("%Y-%m-%d %H:%M:%S")
-            print(f"Found No Messages, Finish::{end_time}")
-            raise Exception("Point Failure")
+            logger.info(f"Found No Messages, repeat process")
 
     except Exception as err:
         raise err
 
-while True:
-    consumer_sqs()
+def add_sqs_message(foldername:str, data:dict) -> str:
+    # adding file to indicate message still on process
+    try:
+        if not os.path.exists(foldername):
+            os.makedirs(foldername)
+        file_count = count_active_message(foldername=foldername)
+        filename = f"message-{file_count}.json"
+        path_file = os.path.join(foldername, filename)
+        with open(path_file, "w") as f:
+            json.dump(data, f, indent=4)
+        return path_file
+    except Exception as err:
+        return ""
+
+def count_active_message(foldername:str) -> int:
+    # flat file limit system
+    if not os.path.exists(foldername):
+        os.makedirs(foldername)
+    file_list = os.listdir(foldername)
+    return len(file_list)
+
+def check_redis_connection():
+    try:
+        r = redis.Redis(
+            host=os.getenv("REDIS_HOST"), 
+            port=os.getenv("REDIS_PORT"), 
+            db=os.getenv("REDIS_DB"), 
+            username=os.getenv("REDIS_USERNAME"), 
+            password=os.getenv("REDIS_PASSWORD"),
+            socket_connect_timeout=5
+        )
+        if r.ping():
+            return True
+        else:
+            return False
+    except redis.ConnectionError as err:
+            logger.error("ERROR connection failed to redis")
+            return False
+
+async def run():
+    max_message=int(os.getenv("MAX_MESSAGE"))
+    foldername=os.getenv("ACTIVE_MESSAGE_PATH")
+    while True:
+        await asyncio.sleep(1)
+        # count maximum allowed active message
+        if count_active_message(foldername=foldername) < max_message:
+             # check redis first
+            redis_status = check_redis_connection()
+            if redis_status:
+                pass
+            else:
+                continue
+            # init consume process
+            consumer_sqs(foldername=foldername)
+        else:
+            continue
+
+if __name__ == "__main__":
+    asyncio.run(run())

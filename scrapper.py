@@ -7,8 +7,6 @@ import datetime
 from celery import Celery
 from dotenv import load_dotenv
 
-from kombu.transport.SQS import Transport as SQSTransport
-
 load_dotenv() 
 
 SQS_URL = "https://sqs.eu-west-1.amazonaws.com/820866026690/phokus-benchmarking-queue"
@@ -23,13 +21,18 @@ aws_client = boto3.client(
 app = Celery("scrapper")
 app.conf.broker_url = 'redis://127.0.0.1:6379/0'
 app.conf.result_backend = 'redis://127.0.0.1:6379/0'
-app.conf.task_routes = {
-    'tasks.consumer_sqs': {'queue': 'consumer_sqs'},
-    'tasks.delete_sqs': {'queue': 'consumer_sqs'}
-}
+app.conf.task_routes = {}
+
+@app.task(name='start', bind=True)
+def start(self, event_body:dict):
+    filename=event_body["filename"]
+    receipt_handle=event_body["receipt_handle"]
+    message_group_id=event_body["message_group_id"]
+    message_pathfile=event_body["message_pathfile"]
+    process_data.apply_async(kwargs={'filename':event_body["filename"]})
 
 @app.task(bind=True)
-def process_data(filename:str):
+def process_data(self, filename:str):
     now = datetime.datetime.now()
     start = now.strftime("%Y-%m-%d %H:%M:%S")
     data_list = []
