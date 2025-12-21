@@ -1,0 +1,502 @@
+[
+  {
+    "item_name": "item_000",
+    "quantity": 0,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_001",
+    "quantity": 1,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_002",
+    "quantity": 3,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_003",
+    "quantity": 6,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_004",
+    "quantity": 10,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_005",
+    "quantity": 15,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_006",
+    "quantity": 21,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_007",
+    "quantity": 28,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_008",
+    "quantity": 36,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_009",
+    "quantity": 45,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_010",
+    "quantity": 55,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_011",
+    "quantity": 66,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_012",
+    "quantity": 78,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_013",
+    "quantity": 91,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_014",
+    "quantity": 105,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_015",
+    "quantity": 120,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_016",
+    "quantity": 136,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_017",
+    "quantity": 153,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_018",
+    "quantity": 171,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_019",
+    "quantity": 190,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_020",
+    "quantity": 210,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_021",
+    "quantity": 231,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_022",
+    "quantity": 253,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_023",
+    "quantity": 276,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_024",
+    "quantity": 300,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_025",
+    "quantity": 325,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_026",
+    "quantity": 351,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_027",
+    "quantity": 378,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_028",
+    "quantity": 406,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_029",
+    "quantity": 435,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_030",
+    "quantity": 465,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_031",
+    "quantity": 496,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_032",
+    "quantity": 528,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_033",
+    "quantity": 561,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_034",
+    "quantity": 595,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_035",
+    "quantity": 630,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_036",
+    "quantity": 666,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_037",
+    "quantity": 703,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_038",
+    "quantity": 741,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_039",
+    "quantity": 780,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_040",
+    "quantity": 820,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_041",
+    "quantity": 861,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_042",
+    "quantity": 903,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_043",
+    "quantity": 946,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_044",
+    "quantity": 990,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_045",
+    "quantity": 1035,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_046",
+    "quantity": 1081,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_047",
+    "quantity": 1128,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_048",
+    "quantity": 1176,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_049",
+    "quantity": 1225,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_050",
+    "quantity": 1275,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_051",
+    "quantity": 1326,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_052",
+    "quantity": 1378,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_053",
+    "quantity": 1431,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_054",
+    "quantity": 1485,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_055",
+    "quantity": 1540,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_056",
+    "quantity": 1596,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_057",
+    "quantity": 1653,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_058",
+    "quantity": 1711,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_059",
+    "quantity": 1770,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_060",
+    "quantity": 1830,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_061",
+    "quantity": 1891,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_062",
+    "quantity": 1953,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_063",
+    "quantity": 2016,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_064",
+    "quantity": 2080,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_065",
+    "quantity": 2145,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_066",
+    "quantity": 2211,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_067",
+    "quantity": 2278,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_068",
+    "quantity": 2346,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_069",
+    "quantity": 2415,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_070",
+    "quantity": 2485,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_071",
+    "quantity": 2556,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_072",
+    "quantity": 2628,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_073",
+    "quantity": 2701,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_074",
+    "quantity": 2775,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_075",
+    "quantity": 2850,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_076",
+    "quantity": 2926,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_077",
+    "quantity": 3003,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_078",
+    "quantity": 3081,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_079",
+    "quantity": 3160,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_080",
+    "quantity": 3240,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_081",
+    "quantity": 3321,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_082",
+    "quantity": 3403,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_083",
+    "quantity": 3486,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_084",
+    "quantity": 3570,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_085",
+    "quantity": 3655,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_086",
+    "quantity": 3741,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_087",
+    "quantity": 3828,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_088",
+    "quantity": 3916,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_089",
+    "quantity": 4005,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_090",
+    "quantity": 4095,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_091",
+    "quantity": 4186,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_092",
+    "quantity": 4278,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_093",
+    "quantity": 4371,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_094",
+    "quantity": 4465,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_095",
+    "quantity": 4560,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_096",
+    "quantity": 4656,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_097",
+    "quantity": 4753,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_098",
+    "quantity": 4851,
+    "date": "2025-12-12"
+  },
+  {
+    "item_name": "item_099",
+    "quantity": 4950,
+    "date": "2025-12-12"
+  }
+]

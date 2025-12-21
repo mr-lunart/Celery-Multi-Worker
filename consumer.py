@@ -2,17 +2,14 @@ import boto3
 import asyncio
 import redis
 
-from logger_consumer import setup_logger
-
 import os
 import json
+import logging
 
 from celery import Celery
 from dotenv import load_dotenv
 
-load_dotenv() 
-
-logger = setup_logger()
+load_dotenv(dotenv_path="config/.env")
 
 aws_client = boto3.client(
     service_name="sqs",
@@ -30,6 +27,29 @@ app.conf.result_backend=os.getenv("CELERY_REDIS")
 def gateway(self, event_body:dict):
     return
 
+def setup_logger():
+    logs_path = "logs/consumer"
+    logger = logging.getLogger("logger-consumer")
+    logger.setLevel(logging.DEBUG)
+    log_console_handler = logging.StreamHandler()
+    log_file_handler = logging.handlers.TimedRotatingFileHandler(
+        filename=os.path.join(logs_path, 'consumer-history.log'),
+        when='midnight',
+        interval=1,
+        backupCount=3, # Akan menyimpan log 7 hari terakhir
+        encoding='utf-8',
+    )
+    logger.addHandler(log_console_handler)
+    logger.addHandler(log_file_handler)
+    formatter = logging.Formatter(
+        "{asctime} - {levelname} - {message}",
+        style="{",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    log_console_handler.setFormatter(formatter)
+    log_file_handler.setFormatter(formatter)
+    return logger
+
 def consumer_sqs(foldername:str):
     response = aws_client.receive_message(
         QueueUrl=os.getenv("SQS_URL"),
@@ -43,7 +63,7 @@ def consumer_sqs(foldername:str):
             message = messages[0]
             event_body = json.loads(message['Body'])
             event_body["receipt_handle"]=message['ReceiptHandle']
-            event_body["group_id"]=message['Attributes']['MessageGroupId']
+            event_body["message_group_id"]=message['Attributes']['MessageGroupId']
             message_pathfile = add_sqs_message(foldername=foldername,data=event_body)
             logger.info(f"Found message, sending task {message_pathfile} to worker...")
             if message_pathfile:
@@ -116,4 +136,5 @@ async def run():
             continue
 
 if __name__ == "__main__":
+    logger = setup_logger()
     asyncio.run(run())

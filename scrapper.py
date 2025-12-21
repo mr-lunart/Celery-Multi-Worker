@@ -7,7 +7,11 @@ import datetime
 from celery import Celery
 from dotenv import load_dotenv
 
-load_dotenv() 
+from celery.utils.log import get_task_logger
+
+logger = get_task_logger(__name__)
+
+load_dotenv(dotenv_path="config/.env") 
 
 SQS_URL = "https://sqs.eu-west-1.amazonaws.com/820866026690/phokus-benchmarking-queue"
 
@@ -19,8 +23,8 @@ aws_client = boto3.client(
 )
 
 app = Celery("scrapper")
-app.conf.broker_url = 'redis://127.0.0.1:6379/0'
-app.conf.result_backend = 'redis://127.0.0.1:6379/0'
+app.conf.broker_url = os.getenv("CELERY_REDIS")
+app.conf.result_backend = os.getenv("CELERY_REDIS")
 app.conf.task_routes = {}
 
 @app.task(name='start', bind=True)
@@ -51,10 +55,10 @@ def process_data(self, filename:str):
             json.dump(data_list, file, indent=2) 
         now = datetime.datetime.now()
         finish = now.strftime("%Y-%m-%d %H:%M:%S")
-        print(f"✅ Finish. write '{filename}' : start: {start} | finish: {finish}")
+        logger.info(f"✅ Finish. write '{filename}' : start: {start} | finish: {finish}")
         return
     except:
         now = datetime.datetime.now()
         finish = now.strftime("%Y-%m-%d %H:%M:%S")
-        print(f"failed writing file: {filename} start: {start} | finish: {finish}")
+        logger.error(f"failed writing file: {filename} start: {start} | finish: {finish}")
         return
