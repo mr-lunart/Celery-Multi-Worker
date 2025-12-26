@@ -1,6 +1,7 @@
 import boto3
 import asyncio
 import redis
+from datetime import datetime
 
 import os
 import json
@@ -50,41 +51,43 @@ def setup_logger():
     log_file_handler.setFormatter(formatter)
     return logger
 
-def consumer_sqs(foldername:str):
+def consumer_sqs():
     response = aws_client.receive_message(
         QueueUrl=os.getenv("SQS_URL"),
-        MaxNumberOfMessages=1,
+        MaxNumberOfMessages=10,
         MessageSystemAttributeNames=['MessageGroupId'],
         WaitTimeSeconds=10 # Long polling
     )
     messages = response.get('Messages', [])
     try:
         if messages:
-            message = messages[0]
-            event_body = json.loads(message['Body'])
-            event_body["receipt_handle"]=message['ReceiptHandle']
-            event_body["message_group_id"]=message['Attributes']['MessageGroupId']
-            message_pathfile = add_sqs_message(foldername=foldername,data=event_body)
-            logger.info(f"Found message, sending task {message_pathfile} to worker...")
-            if message_pathfile:
-                event_body["message_pathfile"]=message_pathfile
-                gateway.apply_async(kwargs={'event_body':event_body})
-                return
-            else:
-                raise Exception("Failed adding message")
+            for message in messages:
+                event_body = json.loads(message['Body'])
+                event_body["receipt_handle"]=message['ReceiptHandle']
+                event_body["message_group_id"]=message['Attributes']['MessageGroupId']
+                message_pathfile = add_sqs_message(data=event_body)
+                logger.info(f"Found message, sending task {message_pathfile} to worker...")
+                if message_pathfile:
+                    event_body["message_pathfile"]=message_pathfile
+                    gateway.apply_async(kwargs={'event_body':event_body})
+                    return
+                else:
+                    raise Exception("Failed adding message")
         else:
             logger.info(f"Found No Messages, repeat process")
 
     except Exception as err:
         raise err
 
-def add_sqs_message(foldername:str, data:dict) -> str:
+def add_sqs_message(data:dict) -> str:
     # adding file to indicate message still on process
+    foldername=os.getenv("ACTIVE_MESSAGE_PATH")
     try:
         if not os.path.exists(foldername):
             os.makedirs(foldername)
         file_count = count_active_message(foldername=foldername)
-        filename = f"message-{file_count}.json"
+        current_date_path = datetime.now().strftime("%Y/%m/%d")
+        filename = f"message-{file_count}-{current_date_path}.json"
         path_file = os.path.join(foldername, filename)
         with open(path_file, "w") as f:
             json.dump(data, f, indent=4)
@@ -121,7 +124,7 @@ async def run():
     max_message=int(os.getenv("MAX_MESSAGE"))
     foldername=os.getenv("ACTIVE_MESSAGE_PATH")
     while True:
-        await asyncio.sleep(1)
+        await asyncio.sleep(2)
         # count maximum allowed active message
         if count_active_message(foldername=foldername) < max_message:
              # check redis first
@@ -131,7 +134,7 @@ async def run():
             else:
                 continue
             # init consume process
-            consumer_sqs(foldername=foldername)
+            consumer_sqs()
         else:
             continue
 

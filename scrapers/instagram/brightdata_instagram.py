@@ -37,7 +37,9 @@ class InstagramScrapper:
             self.event_loop(result=result,filename=None)
         else:
             return
-        self.save_upload_s3(s3_key="instagram/test_scrapper/")
+        current_date_path = datetime.now().strftime("%Y/%m/%d")
+        s3_key = f"instagram/{current_date_path}/"
+        self.save_upload_s3(s3_key=s3_key)
 
     def sync_instagram_post(self, input_data:list[dict]):
         self.request_input['input'] = input_data

@@ -38,7 +38,9 @@ class FacebookScrapper:
             self.event_loop(result=result,filename=None)
         else:
             return
-        self.save_upload_s3(s3_key="facebook/test_scrapper/")
+        current_date_path = datetime.now().strftime("%Y/%m/%d")
+        s3_key = f"facebook/{current_date_path}/"
+        self.save_upload_s3(s3_key=s3_key)
   
     def transform_input(self, param_input:list[dict]) -> list[dict]:
         list_param_input = []

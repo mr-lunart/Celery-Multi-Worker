@@ -19,7 +19,7 @@ warnings.filterwarnings('ignore')
 
 class Scrape_Youtube:
     
-    BUCKET_NAME = "social-external-tracking"
+    BUCKET_NAME = "phokus-ingestion-raw-bucket"
     PROFILE_PICTURE_OBJ_URL = "https://social-external-tracking.s3.eu-west-1.amazonaws.com/youtube/profile_pictures/{}.png"
     PLATFORM = "youtube"
     YOUTUBE_ROOT_URL = "https://www.youtube.com/"
@@ -85,7 +85,9 @@ class Scrape_Youtube:
         if scraping_status == None or scraping_status == False :
             self.logger.error('failed scraping channel and posts')
             return
-        self.save_to_s3(s3_key="youtube/test_scrapper/")
+        current_date_path = datetime.now().strftime("%Y/%m/%d")
+        s3_key = f"youtube/{current_date_path}/"
+        self.save_to_s3(s3_key=s3_key)
         self.logger.info('Scraping is finished')
 
     def save_to_s3(self, s3_key:str):

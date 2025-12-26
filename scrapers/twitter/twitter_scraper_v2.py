@@ -17,7 +17,7 @@ from scrapers.utils.logger import generate_log_object
 
 class Scrape_Twitter:
     
-    BUCKET_NAME = "social-external-tracking"
+    BUCKET_NAME = "phokus-ingestion-raw-bucket"
     PROFILE_PICTURE_OBJ_URL = "https://social-external-tracking.s3.eu-west-1.amazonaws.com/twitter/profile_pictures/{}.png"
     PLATFORM = "twitter"
     POST_URL = "https://twitter.com/{}/status/{}"
@@ -61,7 +61,9 @@ class Scrape_Twitter:
             self.logger.error('failed scraping channel posts')
             return
 
-        self.save_to_s3(s3_key="twitter/test_scrapper/")
+        current_date_path = datetime.now().strftime("%Y/%m/%d")
+        s3_key = f"twitter/{current_date_path}/"
+        self.save_to_s3(s3_key=s3_key)
         self.logger.info('Scraping is finished')
 
     def save_to_s3(self, s3_key:str):
