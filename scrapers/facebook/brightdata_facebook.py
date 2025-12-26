@@ -77,9 +77,9 @@ class FacebookScrapper:
                 return snapshot_id
             else:
                 return ""
-        except requests.exceptions.RequestException as e:
-            print(f"Error: {e}")
-            return ""
+        except requests.exceptions.RequestException as err:
+            print(f"Error: {err}")
+            raise err
         
     def snapshot_downloader(self, snapshot_id:str, filename:str):
         url = f'https://api.brightdata.com/datasets/v3/snapshot/{snapshot_id}'
@@ -96,8 +96,9 @@ class FacebookScrapper:
                 self.posts_metric = full_dataset
             print("Download snapshot completed successfully")
             
-        except requests.exceptions.RequestException as e:
-            print(f"Error: {e}")
+        except requests.exceptions.RequestException as err:
+            print(f"Error: {err}")
+            raise err
 
     def sync_facebook_post_by_url_profile(self, input_data:list[dict]):
         self.request_input['input'] = input_data
@@ -165,7 +166,7 @@ class FacebookScrapper:
             self.bucket.upload_file(post_name, f"{s3_key}{post_name}")
         except Exception as err:
             self.logger.error(f"Error uploading data to S3:{err}")
-            return
+            raise err
         
         try:
             for filepath in (profile_name, post_name):
@@ -176,7 +177,7 @@ class FacebookScrapper:
             self.logger.info(f'file facebook {channel_name} parquet is deleted')
         except Exception as err:
             self.logger.error(f"Error deleting data:{err}")
-            return
+            raise err
 
     def write_json_file(self, status, data, filename):
         if status == 200:

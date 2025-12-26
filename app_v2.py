@@ -49,10 +49,18 @@ def start(self, event_body:dict):
 
 @app.task(bind=True)
 def remove_task_from_queue(receipt_handle:str, message_pathfile:str):
-    delete_response = aws_client.delete_message(
-                QueueUrl=SQS_URL,
-                ReceiptHandle=receipt_handle
-    )
+    try:
+        delete_response = aws_client.delete_message(
+                    QueueUrl=SQS_URL,
+                    ReceiptHandle=receipt_handle
+        )
+        if os.path.exists(message_pathfile):
+            os.remove(message_pathfile)
+            print(f"file is deleted {message_pathfile}")
+        else:
+            print(f"Failed to delete file {message_pathfile}")
+    except Exception as err:
+        logger.error(f"{message_pathfile} {err}")
 
 @app.task(bind=True)
 def tiktok_scraper(self, channel_name:str, post_limit:int):

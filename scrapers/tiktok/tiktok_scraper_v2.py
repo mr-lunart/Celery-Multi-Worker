@@ -10,7 +10,8 @@ import os
 from sqlalchemy import text
 from .channel_model import ChannelModel
 from .post_model import PostModel
-from scrapers.utils import get_engine
+from scrapers.utils.get_engine import get_engine
+from scrapers.utils.logger import generate_log_object
 
 class Scrape_TikTok():
 
@@ -36,7 +37,7 @@ class Scrape_TikTok():
             
             Intended to scrape TikTok on a weekly basis, posts tracked for 4 weeks (28 days) only.
         """
-        self.logger = logger
+        self.logger = generate_log_object(self.PLATFORM)
 
         self.input_channel = input_channel
         self.start_date = start_date
@@ -101,7 +102,7 @@ class Scrape_TikTok():
             self.bucket.upload_file(post_name, f"{s3_key}{post_name}")
         except Exception as err:
             self.logger.error(f"Error uploading data to S3:{err}")
-            return
+            raise err
         
         try:
             for filepath in (profile_name, post_name):
@@ -112,7 +113,7 @@ class Scrape_TikTok():
             self.logger.info(f'file tiktok {channel_name} parquet is deleted')
         except Exception as err:
             self.logger.error(f"Error deleting data:{err}")
-            return
+            raise err
 
     def scrape_channels(self, earlier_data_channel):
         # Scraping Channel

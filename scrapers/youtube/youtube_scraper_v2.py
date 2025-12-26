@@ -11,8 +11,8 @@ import os
 from sqlalchemy import text
 from .channel_model import ChannelModel
 from .post_model import PostModel
-from scrapers.engine import get_engine
-from scrapers.logger import generate_log_object
+from scrapers.utils.get_engine import get_engine
+from scrapers.utils.logger import generate_log_object
 
 warnings.filterwarnings('ignore')
 
@@ -104,7 +104,7 @@ class Scrape_Youtube:
             self.bucket.upload_file(post_name, f"{s3_key}{post_name}")
         except Exception as err:
             self.logger.error(f"Error uploading data to S3:{err}")
-            return
+            raise err
         
         try:
             for filepath in (profile_name, post_name):
@@ -115,7 +115,7 @@ class Scrape_Youtube:
             self.logger.info(f'file youtube {channel_name} parquet is deleted')
         except Exception as err:
             self.logger.error(f"Error deleting data:{err}")
-            return
+            raise err
 
     def scrape_channels_and_posts(self, earlier_data_channel, earlier_data_post):
         try:
