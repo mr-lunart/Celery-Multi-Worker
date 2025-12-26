@@ -3,7 +3,7 @@ import json
 import time
 
 from datetime import datetime
-from scrapers.logger import generate_log_object
+from scrapers.utils.logger import generate_log_object
 import boto3
 import pandas as pd
 import os
@@ -143,6 +143,7 @@ class InstagramScrapper:
                     print("reload monitor 15s")
                     time.sleep(15)
         else:
+            self.logger.error("Error snapshot id not found")
             raise Exception("Error snapshot id not found")
 
     def monitor_api(self, snapshot_id:str):
@@ -159,8 +160,8 @@ class InstagramScrapper:
             else:
                 return ""
         except requests.exceptions.RequestException as e:
-            print(f"Error: {e}")
-            return ""
+            self.logger.error(e)
+            raise e
         
     def snapshot_downloader(self, snapshot_id:str, filename:str):
         url = f'https://api.brightdata.com/datasets/v3/snapshot/{snapshot_id}'
@@ -178,7 +179,8 @@ class InstagramScrapper:
             print("Download snapshot completed successfully")
             
         except requests.exceptions.RequestException as e:
-            print(f"Error: {e}")
+            self.logger.error(e)
+            raise e
 
     def save_upload_s3(self, s3_key:str):
         channel_name = self.platform_channel_name

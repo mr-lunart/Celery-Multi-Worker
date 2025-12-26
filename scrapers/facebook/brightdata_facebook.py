@@ -3,7 +3,7 @@ import json
 import time
 
 from datetime import datetime
-from scrapers.logger import generate_log_object
+from scrapers.utils.logger import generate_log_object
 import boto3
 import pandas as pd
 import os
@@ -62,6 +62,7 @@ class FacebookScrapper:
                     print("reload monitor 15s")
                     time.sleep(15)
         else:
+            self.logger.error("Error snapshot id not found")
             raise Exception("Error snapshot id not found")
 
     def monitor_api(self, snapshot_id:str):
@@ -78,7 +79,7 @@ class FacebookScrapper:
             else:
                 return ""
         except requests.exceptions.RequestException as err:
-            print(f"Error: {err}")
+            self.logger.error(err)
             raise err
         
     def snapshot_downloader(self, snapshot_id:str, filename:str):
@@ -97,7 +98,7 @@ class FacebookScrapper:
             print("Download snapshot completed successfully")
             
         except requests.exceptions.RequestException as err:
-            print(f"Error: {err}")
+            self.logger.error(err)
             raise err
 
     def sync_facebook_post_by_url_profile(self, input_data:list[dict]):
