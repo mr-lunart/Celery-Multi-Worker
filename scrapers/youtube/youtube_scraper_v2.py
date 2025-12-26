@@ -281,6 +281,11 @@ class Scrape_Youtube:
         result = self.session.execute(text(sql_query_post))
         rows = result.fetchall()
         earlier_data_post = pd.DataFrame(rows, columns=result.keys())
+        
+        # TO DO
+        # close the connection, this is last sql transaction, another sql transaction is forbidden after this
+        # if there need of another transaction, first refactor the SQL session maker engine
+        self.session.close()
             
         return earlier_data_channel, earlier_data_post
     
