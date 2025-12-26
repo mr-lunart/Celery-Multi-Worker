@@ -6,6 +6,7 @@ from celery import Celery
 from dotenv import load_dotenv
 
 from celery.utils.log import get_task_logger
+from celery import chain
 
 from scrapers.utils.s3_tool import download_json_file
 from scrapers.facebook.brightdata_facebook import FacebookScrapper
@@ -41,11 +42,46 @@ app.conf.task_routes = {}
 
 @app.task(name='start', bind=True)
 def start(self, event_body:dict):
-    filename=event_body["filename"]
-    receipt_handle=event_body["receipt_handle"]
-    message_group_id=event_body["message_group_id"]
-    message_pathfile=event_body["message_pathfile"]
-    # process_data.apply_async(kwargs={'filename':event_body["filename"]})
+    # filename=event_body.get("filename","")
+    receipt_handle=event_body.get("receipt_handle","")
+    message_group_id=event_body.get("message_group_id","")
+    message_pathfile=event_body.get("message_pathfile","")
+    platform=event_body.get("platform","")
+    channel_name=event_body.get("channel_name","")
+    url=event_body.get("url","")
+    start_date=event_body.get("start_date","")
+    end_date=event_body.get("end_date","")
+    num_of_post=event_body.get("num_of_post","")
+    if platform == "facebook":
+        facebook_scraper.apply_async(kwargs={
+            'url':url,
+            'post_limit':num_of_post,
+            'receipt_handle':receipt_handle,
+            'message_pathfile':message_pathfile,})
+    elif platform == "instagram":
+        instagram_scraper.apply_async(kwargs={
+            'url':url,
+            'post_limit':num_of_post,
+            'receipt_handle':receipt_handle,
+            'message_pathfile':message_pathfile,})
+    elif platform == "tiktok":
+        tiktok_scraper.apply_async(kwargs={
+            'channel_name':channel_name,
+            'post_limit':num_of_post,
+            'receipt_handle':receipt_handle,
+            'message_pathfile':message_pathfile,})
+    elif platform == "twitter":
+        twitter_scraper.apply_async(kwargs={
+            'channel_name':channel_name,
+            'post_limit':num_of_post,
+            'receipt_handle':receipt_handle,
+            'message_pathfile':message_pathfile,})
+    elif platform == "youtube":
+        youtube_scraper.apply_async(kwargs={
+            'channel_name':channel_name,
+            'post_limit':num_of_post,
+            'receipt_handle':receipt_handle,
+            'message_pathfile':message_pathfile,})
 
 @app.task(bind=True)
 def remove_task_from_queue(receipt_handle:str, message_pathfile:str):
@@ -63,7 +99,7 @@ def remove_task_from_queue(receipt_handle:str, message_pathfile:str):
         logger.error(f"{message_pathfile} {err}")
 
 @app.task(bind=True)
-def tiktok_scraper(self, channel_name:str, post_limit:int):
+def tiktok_scraper(self, channel_name:str, post_limit:int, receipt_handle:str, message_pathfile:str):
     rds_credential = config_credential['pgsql']
     tiktok_credentials = config_credential['tiktok']
     api_key = tiktok_credentials['api_key']
@@ -86,11 +122,14 @@ def tiktok_scraper(self, channel_name:str, post_limit:int):
             post_limit=num_of_post
         )
         scrapper.start()
+        remove_task_from_queue.apply_async(kwargs={
+            'receipt_handle':receipt_handle,
+            'message_pathfile':message_pathfile})
     except Exception as err:
         logger.error(err)
 
 @app.task(bind=True)
-def twitter_scraper(self, channel_name:str, post_limit:int):
+def twitter_scraper(self, channel_name:str, post_limit:int, receipt_handle:str, message_pathfile:str):
     rds_credential = config_credential['pgsql']
     twitter_credentials = config_credential['twitter']
     bearer_token = twitter_credentials['bearer_token1']
@@ -112,11 +151,14 @@ def twitter_scraper(self, channel_name:str, post_limit:int):
             post_limit=num_of_post
         )
         scrapper.start()
+        remove_task_from_queue.apply_async(kwargs={
+            'receipt_handle':receipt_handle,
+            'message_pathfile':message_pathfile})
     except Exception as err:
         logger.error(err)
 
 @app.task(bind=True)
-def youtube_scraper(self, channel_name:str, post_limit:int):
+def youtube_scraper(self, channel_name:str, post_limit:int, receipt_handle:str, message_pathfile:str):
     rds_credential = config_credential['pgsql']
     youtube_credentials = config_credential['youtube']
     developer_key = youtube_credentials['developer_key']
@@ -140,11 +182,14 @@ def youtube_scraper(self, channel_name:str, post_limit:int):
             post_limit=num_of_post
         )
         scrapper.start()
+        remove_task_from_queue.apply_async(kwargs={
+            'receipt_handle':receipt_handle,
+            'message_pathfile':message_pathfile})
     except Exception as err:
         logger.error(err)
 
 @app.task(bind=True)
-def facebook_scraper(self, url:str, post_limit:int):
+def facebook_scraper(self, url:str, post_limit:int, receipt_handle:str, message_pathfile:str):
     num_of_post = post_limit
     input_channel = url
     today = datetime.today()
@@ -167,11 +212,14 @@ def facebook_scraper(self, url:str, post_limit:int):
 
     try:
         scrapper.start()
+        remove_task_from_queue.apply_async(kwargs={
+            'receipt_handle':receipt_handle,
+            'message_pathfile':message_pathfile})
     except Exception as err:
         logger.error(err)
 
 @app.task(bind=True)
-def instagram_scraper(self, url:str, post_limit:int):
+def instagram_scraper(self, url:str, post_limit:int, receipt_handle:str, message_pathfile:str):
     num_of_post = post_limit
     input_channel = url
     today = datetime.today()
@@ -195,6 +243,9 @@ def instagram_scraper(self, url:str, post_limit:int):
 
     try:
         scrapper.start()
+        remove_task_from_queue.apply_async(kwargs={
+            'receipt_handle':receipt_handle,
+            'message_pathfile':message_pathfile})
     except Exception as err:
         logger.error(err)
 
