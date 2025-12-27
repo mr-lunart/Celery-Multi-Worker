@@ -22,6 +22,10 @@ aws_client = boto3.client(
 app = Celery()
 app.conf.broker_url=os.getenv("CELERY_REDIS")
 app.conf.result_backend=os.getenv("CELERY_REDIS")
+app.conf.task_acks_late = True
+app.conf.worker_prefetch_multiplier = 1
+app.conf.task_reject_on_worker_lost = True
+app.conf.task_routes = {}
 
 # create entry point for celery worker
 @app.task(name='start',bind=True)
@@ -54,7 +58,7 @@ def setup_logger():
 def consumer_sqs():
     response = aws_client.receive_message(
         QueueUrl=os.getenv("SQS_URL"),
-        MaxNumberOfMessages=10,
+        MaxNumberOfMessages=1,
         MessageSystemAttributeNames=['MessageGroupId'],
         WaitTimeSeconds=10 # Long polling
     )
@@ -87,8 +91,8 @@ def add_sqs_message(data:dict) -> str:
         if not os.path.exists(foldername):
             os.makedirs(foldername)
         file_count = count_active_message(foldername=foldername)
-        current_date_path = datetime.now().strftime("%Y%m%d")
-        filename = f"message-{file_count}-{current_date_path}.json"
+        current_date_path = datetime.now().strftime("%Y%m%d%H%M%S%f")
+        filename = f"message-{file_count}{current_date_path}.json"
         path_file = os.path.join(foldername, filename)
         with open(path_file, "w") as f:
             json.dump(data, f, indent=4)
@@ -125,7 +129,7 @@ async def run():
     max_message=int(os.getenv("MAX_MESSAGE"))
     foldername=os.getenv("ACTIVE_MESSAGE_PATH")
     while True:
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
         # count maximum allowed active message
         if count_active_message(foldername=foldername) < max_message:
              # check redis first

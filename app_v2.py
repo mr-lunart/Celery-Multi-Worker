@@ -38,7 +38,11 @@ aws_client = boto3.client(
 app = Celery("app_v2")
 app.conf.broker_url = os.getenv("CELERY_REDIS")
 app.conf.result_backend = os.getenv("CELERY_REDIS")
+app.conf.task_acks_late = True
+app.conf.worker_prefetch_multiplier = 1
+app.conf.task_reject_on_worker_lost = True
 app.conf.task_routes = {}
+
 
 @app.task(name='start', bind=True)
 def start(self, event_body:dict):
