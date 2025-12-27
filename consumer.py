@@ -10,7 +10,7 @@ import logging
 from celery import Celery
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path="config/.env")
+load_dotenv(dotenv_path="config/.env", override=True)
 
 aws_client = boto3.client(
     service_name="sqs",
@@ -72,6 +72,7 @@ def consumer_sqs():
                     gateway.apply_async(kwargs={'event_body':event_body})
                     return
                 else:
+                    logger.error(f"Failed adding message")
                     raise Exception("Failed adding message")
         else:
             logger.info(f"Found No Messages, repeat process")
@@ -81,12 +82,12 @@ def consumer_sqs():
 
 def add_sqs_message(data:dict) -> str:
     # adding file to indicate message still on process
-    foldername=os.getenv("ACTIVE_MESSAGE_PATH")
+    foldername = os.getenv("ACTIVE_MESSAGE_PATH")
     try:
         if not os.path.exists(foldername):
             os.makedirs(foldername)
         file_count = count_active_message(foldername=foldername)
-        current_date_path = datetime.now().strftime("%Y/%m/%d")
+        current_date_path = datetime.now().strftime("%Y%m%d")
         filename = f"message-{file_count}-{current_date_path}.json"
         path_file = os.path.join(foldername, filename)
         with open(path_file, "w") as f:

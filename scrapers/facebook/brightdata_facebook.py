@@ -19,7 +19,11 @@ class FacebookScrapper:
         self.platform_channel_name = "facebook"
         self.logger = generate_log_object(self.platform_channel_name)
         boto3_session = boto3.Session()
-        s3_resource = boto3_session.resource('s3')
+        s3_resource = boto3_session.resource(
+            service_name='s3',
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY")
+        )
         self.bucket = s3_resource.Bucket(bucket_name)
         pass
 

@@ -46,5 +46,5 @@ def delete_message():
     else:
         print("found no messages")
 
-# delete_message()
-add_message()
+delete_message()
+# add_message()

@@ -11,14 +11,14 @@ from celery import chain
 from scrapers.utils.s3_tool import download_json_file
 from scrapers.facebook.brightdata_facebook import FacebookScrapper
 from scrapers.instagram.brightdata_instagram import InstagramScrapper
-from scrapers.linkedin.brightdata_linkedin import LinkedinScrapper
+# from scrapers.linkedin.brightdata_linkedin import LinkedinScrapper
 from scrapers.twitter.twitter_scraper_v2 import Scrape_Twitter
 from scrapers.tiktok.tiktok_scraper_v2 import Scrape_TikTok
 from scrapers.youtube.youtube_scraper_v2 import Scrape_Youtube
 
 logger = get_task_logger(__name__)
 
-load_dotenv(dotenv_path="config/.env") 
+load_dotenv(dotenv_path="config/.env", override=True) 
 
 SQS_URL = "https://sqs.eu-west-1.amazonaws.com/820866026690/phokus-benchmarking-queue"
 BRIGHTDATA_KEY_API = "5a945c61c1dca42391ab2f6b482b4d2f4245121b0452cad02b7414b6d9cf2513"
@@ -43,6 +43,7 @@ app.conf.task_routes = {}
 @app.task(name='start', bind=True)
 def start(self, event_body:dict):
     # filename=event_body.get("filename","")
+    logger.info(event_body)
     receipt_handle=event_body.get("receipt_handle","")
     message_group_id=event_body.get("message_group_id","")
     message_pathfile=event_body.get("message_pathfile","")
@@ -57,34 +58,34 @@ def start(self, event_body:dict):
             'url':url,
             'post_limit':num_of_post,
             'receipt_handle':receipt_handle,
-            'message_pathfile':message_pathfile,})
+            'message_pathfile':message_pathfile})
     elif platform == "instagram":
         instagram_scraper.apply_async(kwargs={
             'url':url,
             'post_limit':num_of_post,
             'receipt_handle':receipt_handle,
-            'message_pathfile':message_pathfile,})
+            'message_pathfile':message_pathfile})
     elif platform == "tiktok":
         tiktok_scraper.apply_async(kwargs={
             'channel_name':channel_name,
             'post_limit':num_of_post,
             'receipt_handle':receipt_handle,
-            'message_pathfile':message_pathfile,})
+            'message_pathfile':message_pathfile})
     elif platform == "twitter":
         twitter_scraper.apply_async(kwargs={
             'channel_name':channel_name,
             'post_limit':num_of_post,
             'receipt_handle':receipt_handle,
-            'message_pathfile':message_pathfile,})
+            'message_pathfile':message_pathfile})
     elif platform == "youtube":
         youtube_scraper.apply_async(kwargs={
             'channel_name':channel_name,
             'post_limit':num_of_post,
             'receipt_handle':receipt_handle,
-            'message_pathfile':message_pathfile,})
+            'message_pathfile':message_pathfile})
 
 @app.task(bind=True)
-def remove_task_from_queue(receipt_handle:str, message_pathfile:str):
+def remove_task_from_queue(self, receipt_handle:str, message_pathfile:str):
     try:
         delete_response = aws_client.delete_message(
                     QueueUrl=SQS_URL,
@@ -199,8 +200,8 @@ def facebook_scraper(self, url:str, post_limit:int, receipt_handle:str, message_
         {
             "url":input_channel,
             "num_of_posts":num_of_post,
-            "start_date":start_date, # MM-DD-YYYY
-            "end_date":end_date, # MM-DD-YYYY
+            "start_date":start_date.strftime("%Y-%m-%d"), # MM-DD-YYYY
+            "end_date":end_date.strftime("%Y-%m-%d"), # MM-DD-YYYY
         }
     ]
 
@@ -214,7 +215,8 @@ def facebook_scraper(self, url:str, post_limit:int, receipt_handle:str, message_
         scrapper.start()
         remove_task_from_queue.apply_async(kwargs={
             'receipt_handle':receipt_handle,
-            'message_pathfile':message_pathfile})
+            'message_pathfile':message_pathfile}
+        )
     except Exception as err:
         logger.error(err)
 
@@ -229,8 +231,8 @@ def instagram_scraper(self, url:str, post_limit:int, receipt_handle:str, message
         {
             "url":input_channel,
             "num_of_posts":num_of_post,
-            "start_date":start_date, # MM-DD-YYYY
-            "end_date":end_date, # MM-DD-YYYY
+            "start_date":start_date.strftime("%Y-%m-%d"), # MM-DD-YYYY
+            "end_date":end_date.strftime("%Y-%m-%d"), # MM-DD-YYYY
             "post_type":"" # 'Post' / 'Reel'
         }
     ]
