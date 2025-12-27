@@ -3,8 +3,8 @@ Description=Consumer SQS task and send it to celery worker
 After=network.target celeryd.service
 
 [Service]
-ExecStart=/home/ubuntu/celery/.venv/bin/python3 /home/ubuntu/celery/consumer.py
-WorkingDirectory=/home/ubuntu/celery
+ExecStart=/home/ubuntu/Celery-Multi-Worker/.venv/bin/python3 /home/ubuntu/celery/consumer.py
+WorkingDirectory=/home/ubuntu/Celery-Multi-Worker
 StandardOutput=inherit
 StandardError=inherit
 Restart=always
