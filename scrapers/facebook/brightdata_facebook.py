@@ -149,8 +149,8 @@ class FacebookScrapper:
             raise err
 
     def sync_facebook_post_by_url_profile(self, input_data:list[dict]):
-        self.request_input['input'] = input_data
-        input_post = json.dumps(self.request_input)
+        request_input = {'input':input_data}
+        input_post = json.dumps(request_input)
         url =  "https://api.brightdata.com/datasets/v3/scrape?dataset_id=gd_lkaxegm826bjpoo9m5&notify=false&include_errors=true"
         headers = {
         "Authorization": f"Bearer {self.api_key}",
@@ -175,8 +175,8 @@ class FacebookScrapper:
             return status, None
         
     def sync_facebook_profile(self, input_data:list[dict]):
-        self.request_input['input'] = input_data
-        input_post = json.dumps(self.request_input)
+        request_input = {'input':input_data}
+        input_post = json.dumps(request_input)
         url =  "https://api.brightdata.com/datasets/v3/scrape?dataset_id=gd_mf124a0511bauquyow&notify=false&include_errors=true"
         headers = {
         "Authorization": f"Bearer {self.api_key}",

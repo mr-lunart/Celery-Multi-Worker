@@ -22,7 +22,6 @@ class InstagramScrapper:
             end_date:str,
             post_limit:int) -> None:
         self.api_key = api_key
-        self.request_input = {'input':[]}
 
         self.input_channel = input_channel
         self.start_date = start_date
@@ -53,13 +52,13 @@ class InstagramScrapper:
         }]
 
         transformed_param = self.transform_input(param_input=data_input)
-        _, result = self.sync_facebook_profile(transformed_param)
+        _, result = self.sync_instagram_profile(transformed_param)
         if isinstance(result, dict):
             self.data_kind = "profile"
             self.event_loop(result=result,filename=None)
         else:
             return
-        _, result = self.sync_facebook_post_by_url_profile(data_input)
+        _, result = self.sync_instagram_post(data_input)
         if isinstance(result, dict):
             self.data_kind = "post"
             self.event_loop(result=result,filename=None)
@@ -88,8 +87,8 @@ class InstagramScrapper:
         return rows
 
     def sync_instagram_post(self, input_data:list[dict]):
-        self.request_input['input'] = input_data
-        input_post = json.dumps(self.request_input)
+        request_input = {'input':input_data}
+        input_post = json.dumps(request_input)
         url =  "https://api.brightdata.com/datasets/v3/scrape?dataset_id=gd_lk5ns7kz21pck8jpis&notify=false&include_errors=true&type=discover_new&discover_by=url"
         headers = {
         "Authorization": f"Bearer {self.api_key}",
@@ -115,8 +114,8 @@ class InstagramScrapper:
             return status, None
         
     def sync_instagram_profile(self, input_data:list[dict]):
-        self.request_input['input'] = input_data
-        input_post = json.dumps(self.request_input)
+        request_input = {'input':input_data}
+        input_post = json.dumps(request_input)
         url =  "https://api.brightdata.com/datasets/v3/scrape?dataset_id=gd_l1vikfch901nx3by4&notify=false&include_errors=true"
         headers = {
         "Authorization": f"Bearer {self.api_key}",
