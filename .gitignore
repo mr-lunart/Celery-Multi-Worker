@@ -3,6 +3,6 @@
 .vscode*
 cache*
 *pyc
-*log
+*.log*
 *csv
 *pid*
