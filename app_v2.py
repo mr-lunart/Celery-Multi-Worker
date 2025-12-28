@@ -45,7 +45,7 @@ app.conf.task_routes = {}
 
 
 @app.task(name='start', bind=True)
-def start(self, event_body:dict):
+def gateway(self, event_body:dict):
     # message_group_id=event_body.get("message_group_id","")
     receipt_handle=event_body.get("receipt_handle","")
     message_pathfile=event_body.get("message_pathfile","")

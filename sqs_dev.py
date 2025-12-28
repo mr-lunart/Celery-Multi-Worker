@@ -48,11 +48,49 @@ def delete_message():
         print("found no messages")
 
 # delete_message()
-for i in range(10):
-    # random_num = random.randint(1, 10)
+organizations = ["Liverpool FC"]
+for organization in organizations:
     message_body = json.dumps({
-                "url" : "https://www.facebook.com/fcbarcelona/",
-                "num_of_post" : i+1,
-                "platform":"facebook"
+                "num_of_post" : 5,
+                "platform":"facebook",
+                "organization":organization,
+                "start_date":"",
+                "end_date":"",
+            })
+    add_message(message_body)
+
+    message_body = json.dumps({
+                "num_of_post" : 5,
+                "platform":"instagram",
+                "organization":organization,
+                "start_date":"",
+                "end_date":"",
+            })
+    add_message(message_body)
+
+    message_body = json.dumps({
+                "num_of_post" : 5,
+                "platform":"tiktok",
+                "organization":organization,
+                "start_date":"",
+                "end_date":"",
+            })
+    add_message(message_body)
+
+    message_body = json.dumps({
+                "num_of_post" : 5,
+                "platform":"youtube",
+                "organization":organization,
+                "start_date":"",
+                "end_date":"",
+            })
+    add_message(message_body)
+
+    message_body = json.dumps({
+                "num_of_post" : 5,
+                "platform":"twitter",
+                "organization":organization,
+                "start_date":"",
+                "end_date":"",
             })
     add_message(message_body)
