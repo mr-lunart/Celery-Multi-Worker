@@ -107,8 +107,11 @@ def remove_task_from_queue(self, receipt_handle:str, message_pathfile:str):
         if os.path.exists(message_pathfile):
             os.remove(message_pathfile)
             print(f"file is deleted {message_pathfile}")
+            return f"success delete task {message_pathfile}"
         else:
-            print(f"Failed to delete file {message_pathfile}")
+            print(f"file {message_pathfile} not exist")
+            return f"file {message_pathfile} not exist"
+        
     except Exception as err:
         logger.error(f"failed removing task::{message_pathfile} {err}")
         raise err
