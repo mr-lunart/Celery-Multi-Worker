@@ -1,6 +1,7 @@
 import os
 import json
 import boto3
+import random
 from dotenv import load_dotenv
 
 load_dotenv() 
@@ -15,16 +16,16 @@ aws_client = boto3.client(
 )
 
 # send message
-def add_message():
-    message_body = json.dumps({
-                "filename" : "json_file.json",
-                "id" : "001",
-            })
-    response = aws_client.send_message(
-                QueueUrl=SQS_URL,
-                MessageBody=message_body,
-                MessageGroupId="test"
-            )
+def add_message(message_body):
+    try:
+        response = aws_client.send_message(
+                    QueueUrl=SQS_URL,
+                    MessageBody=message_body,
+                    MessageGroupId="asia"
+        )
+    except Exception as err:
+        print(err)
+
 # delete message
 def delete_message():
     response = aws_client.receive_message(
@@ -46,5 +47,12 @@ def delete_message():
     else:
         print("found no messages")
 
-delete_message()
-# add_message()
+# delete_message()
+for i in range(10):
+    # random_num = random.randint(1, 10)
+    message_body = json.dumps({
+                "url" : "https://www.facebook.com/fcbarcelona/",
+                "num_of_post" : i+1,
+                "platform":"facebook"
+            })
+    add_message(message_body)
