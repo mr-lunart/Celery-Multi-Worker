@@ -2,12 +2,12 @@ import logging
 import os
 from datetime import datetime
 
-def generate_log_object(PLATFORM:str,Organization):
+def generate_log_object(PLATFORM:str, Organization:str):
     """
     Generates a log file.
     """
     
-    logger = logging.getLogger(f"Benchmarking_{PLATFORM}")
+    logger = logging.getLogger(f"Benchmarking")
     logger.setLevel(logging.INFO)
     
     if not logger.handlers:

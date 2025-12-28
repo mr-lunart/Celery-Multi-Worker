@@ -24,13 +24,13 @@ class FacebookScrapper:
             post_limit:int 
         ) -> None:
         self.api_key = api_key
-       
+        self.platform_channel_name = "facebook"
+        self.log = generate_log_object(self.platform_channel_name, input_channel)
+        
         self.input_channel = input_channel
         self.start_date = start_date
         self.end_date = end_date
         self.post_limit = post_limit
-        self.platform_channel_name = "facebook"
-        self.log = generate_log_object(self.platform_channel_name, input_channel)
         self.session = get_engine(conn_params)
         boto3_session = boto3.Session()
         s3_resource = boto3_session.resource(
