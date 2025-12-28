@@ -46,52 +46,61 @@ app.conf.task_routes = {}
 
 @app.task(name='start', bind=True)
 def start(self, event_body:dict):
-    # filename=event_body.get("filename","")
-    logger.info(event_body)
+    # message_group_id=event_body.get("message_group_id","")
     receipt_handle=event_body.get("receipt_handle","")
-    message_group_id=event_body.get("message_group_id","")
     message_pathfile=event_body.get("message_pathfile","")
     platform=event_body.get("platform","")
-    channel_name=event_body.get("channel_name","")
-    url=event_body.get("url","")
+    organization=event_body.get("organization","")
     start_date=event_body.get("start_date","")
     end_date=event_body.get("end_date","")
     num_of_post=event_body.get("num_of_post","")
+    logger.info(f"start_scrapper::{platform}::message_path::{message_pathfile}::organization{organization}")
     if platform == "facebook":
         facebook_scraper.apply_async(kwargs={
-            'url':url,
+            'channel_name':organization,
+            'date_start':start_date,
+            'date_end':end_date,
             'post_limit':num_of_post,
             'receipt_handle':receipt_handle,
             'message_pathfile':message_pathfile})
     elif platform == "instagram":
         instagram_scraper.apply_async(kwargs={
-            'url':url,
+            'channel_name':organization,
+            'date_start':start_date,
+            'date_end':end_date,
             'post_limit':num_of_post,
             'receipt_handle':receipt_handle,
             'message_pathfile':message_pathfile})
     elif platform == "tiktok":
         tiktok_scraper.apply_async(kwargs={
-            'channel_name':channel_name,
+            'channel_name':organization,
+            'date_start':start_date,
+            'date_end':end_date,
             'post_limit':num_of_post,
             'receipt_handle':receipt_handle,
             'message_pathfile':message_pathfile})
     elif platform == "twitter":
         twitter_scraper.apply_async(kwargs={
-            'channel_name':channel_name,
+            'channel_name':organization,
+            'date_start':start_date,
+            'date_end':end_date,
             'post_limit':num_of_post,
             'receipt_handle':receipt_handle,
             'message_pathfile':message_pathfile})
     elif platform == "youtube":
         youtube_scraper.apply_async(kwargs={
-            'channel_name':channel_name,
+            'channel_name':organization,
+            'date_start':start_date,
+            'date_end':end_date,
             'post_limit':num_of_post,
             'receipt_handle':receipt_handle,
             'message_pathfile':message_pathfile})
+    return f"start_scrapper::{platform}::message_path::{message_pathfile}::organization{organization}"
 
 @app.task(bind=True)
 def remove_task_from_queue(self, receipt_handle:str, message_pathfile:str):
     try:
-        delete_response = aws_client.delete_message(
+        aws_client.delete_message(
                     QueueUrl=SQS_URL,
                     ReceiptHandle=receipt_handle
         )
@@ -101,14 +110,14 @@ def remove_task_from_queue(self, receipt_handle:str, message_pathfile:str):
         else:
             print(f"Failed to delete file {message_pathfile}")
     except Exception as err:
-        logger.error(f"{message_pathfile} {err}")
+        logger.error(f"failed removing task::{message_pathfile} {err}")
+        raise err
 
 @app.task(bind=True)
-def tiktok_scraper(self, channel_name:str, post_limit:int, receipt_handle:str, message_pathfile:str):
+def tiktok_scraper(self, channel_name:str, date_start:str, date_end:str, post_limit:int, receipt_handle:str, message_pathfile:str):
     rds_credential = config_credential['pgsql']
     tiktok_credentials = config_credential['tiktok']
     api_key = tiktok_credentials['api_key']
-    weekday_index = None
     
     num_of_post = post_limit
     input_channel = channel_name
@@ -117,8 +126,7 @@ def tiktok_scraper(self, channel_name:str, post_limit:int, receipt_handle:str, m
     end_date = today - timedelta(days=0)
 
     try:
-        scrapper = Scrape_TikTok(
-            weekday_index=weekday_index, 
+        scrapper = Scrape_TikTok( 
             api_key=api_key, 
             conn_params=rds_credential, 
             input_channel=input_channel, 
@@ -130,15 +138,16 @@ def tiktok_scraper(self, channel_name:str, post_limit:int, receipt_handle:str, m
         remove_task_from_queue.apply_async(kwargs={
             'receipt_handle':receipt_handle,
             'message_pathfile':message_pathfile})
+        return f"succes_scrapping::{input_channel}::message_path::{message_pathfile}::total_post{post_limit}"
     except Exception as err:
         logger.error(err)
+        raise err
 
 @app.task(bind=True)
-def twitter_scraper(self, channel_name:str, post_limit:int, receipt_handle:str, message_pathfile:str):
+def twitter_scraper(self, channel_name:str, date_start:str, date_end:str, post_limit:int, receipt_handle:str, message_pathfile:str):
     rds_credential = config_credential['pgsql']
     twitter_credentials = config_credential['twitter']
     bearer_token = twitter_credentials['bearer_token1']
-    weekday_index = None
     
     num_of_post = post_limit
     input_channel = channel_name
@@ -159,26 +168,25 @@ def twitter_scraper(self, channel_name:str, post_limit:int, receipt_handle:str, 
         remove_task_from_queue.apply_async(kwargs={
             'receipt_handle':receipt_handle,
             'message_pathfile':message_pathfile})
+        return f"succes_scrapping::{input_channel}::message_path::{message_pathfile}::total_post{post_limit}"
     except Exception as err:
         logger.error(err)
+        raise err
 
 @app.task(bind=True)
-def youtube_scraper(self, channel_name:str, post_limit:int, receipt_handle:str, message_pathfile:str):
+def youtube_scraper(self, channel_name:str, date_start:str, date_end:str, post_limit:int, receipt_handle:str, message_pathfile:str):
     rds_credential = config_credential['pgsql']
     youtube_credentials = config_credential['youtube']
     developer_key = youtube_credentials['developer_key']
-    weekday_index = None
     
     num_of_post = post_limit
     input_channel = channel_name
     today = datetime.today()
     start_date = today - timedelta(days=6)
     end_date = today - timedelta(days=0)
-
-
+    
     try:
         scrapper = Scrape_Youtube(
-            weekday=weekday_index,
             developer_key=developer_key,
             conn_params=rds_credential, 
             input_channel=input_channel, 
@@ -190,94 +198,79 @@ def youtube_scraper(self, channel_name:str, post_limit:int, receipt_handle:str, 
         remove_task_from_queue.apply_async(kwargs={
             'receipt_handle':receipt_handle,
             'message_pathfile':message_pathfile})
+        return f"succes_scrapping::{input_channel}::message_path::{message_pathfile}::total_post{post_limit}"
     except Exception as err:
         logger.error(err)
+        raise err
 
 @app.task(bind=True)
-def facebook_scraper(self, url:str, post_limit:int, receipt_handle:str, message_pathfile:str):
+def facebook_scraper(self, channel_name:str, date_start:str, date_end:str, post_limit:int, receipt_handle:str, message_pathfile:str):
+    rds_credential = config_credential['pgsql']
     num_of_post = post_limit
-    input_channel = url
+    input_channel = channel_name
     today = datetime.today()
-    start_date = today - timedelta(days=6)
-    end_date = today - timedelta(days=0)
-    param_input = [
-        {
-            "url":input_channel,
-            "num_of_posts":num_of_post,
-            "start_date":start_date.strftime("%Y-%m-%d"), # MM-DD-YYYY
-            "end_date":end_date.strftime("%Y-%m-%d"), # MM-DD-YYYY
-        }
-    ]
+    if date_start:
+        pass
+    else:
+        start_date = today - timedelta(days=6)
+        date_start = start_date.strftime("%Y-%m-%d")
+    if date_end:
+        pass
+    else:
+        end_date = today - timedelta(days=0)
+        date_end = end_date.strftime("%Y-%m-%d")
 
-    scrapper = FacebookScrapper(
-        bucket_name=INGESTION_BUCKET,
-        api_key=BRIGHTDATA_KEY_API,
-        param_input=param_input
-    )
 
     try:
-        scrapper.start()
-        remove_task_from_queue.apply_async(kwargs={
-            'receipt_handle':receipt_handle,
-            'message_pathfile':message_pathfile}
+        scrapper = FacebookScrapper(
+            bucket_name=INGESTION_BUCKET,
+            api_key=BRIGHTDATA_KEY_API,
+            conn_params=rds_credential,
+            input_channel=input_channel,
+            start_date=date_start,
+            end_date=date_end,
+            post_limit=num_of_post,
         )
-    except Exception as err:
-        logger.error(err)
-
-@app.task(bind=True)
-def instagram_scraper(self, url:str, post_limit:int, receipt_handle:str, message_pathfile:str):
-    num_of_post = post_limit
-    input_channel = url
-    today = datetime.today()
-    start_date = today - timedelta(days=6)
-    end_date = today - timedelta(days=0)
-    param_input = [
-        {
-            "url":input_channel,
-            "num_of_posts":num_of_post,
-            "start_date":start_date.strftime("%Y-%m-%d"), # MM-DD-YYYY
-            "end_date":end_date.strftime("%Y-%m-%d"), # MM-DD-YYYY
-            "post_type":"" # 'Post' / 'Reel'
-        }
-    ]
-
-    scrapper = InstagramScrapper(
-        bucket_name=INGESTION_BUCKET,
-        api_key=BRIGHTDATA_KEY_API,
-        param_input=param_input
-    )
-
-    try:
         scrapper.start()
         remove_task_from_queue.apply_async(kwargs={
             'receipt_handle':receipt_handle,
             'message_pathfile':message_pathfile})
+        return f"succes_scrapping::{input_channel}::message_path::{message_pathfile}::total_post{post_limit}"
     except Exception as err:
         logger.error(err)
+        raise err
 
-# @app.task(bind=True)
-# def linkedin_scraper(self, url:str, post_limit:int):
-#     num_of_post = post_limit
-#     input_channel = url
-#     today = datetime.today()
-#     start_date = today - timedelta(days=6)
-#     end_date = today - timedelta(days=0)
-#     param_input = [
-#         {
-#             "url":input_channel,
-#             "start_date":start_date, # MM-DD-YYYY
-#             "end_date":end_date, # MM-DD-YYYY
-#             "post_type":"" # 'Post' / 'Reel'
-#         }
-#     ]
-    
-#     scrapper = LinkedinScrapper(
-#         bucket_name=INGESTION_BUCKET,
-#         api_key=BRIGHTDATA_KEY_API,
-#         param_input=param_input
-#     )
+@app.task(bind=True)
+def instagram_scraper(self, channel_name:str, date_start:str, date_end:str, receipt_handle:str, message_pathfile:str, post_limit:int=10):
+    rds_credential = config_credential['pgsql']
+    num_of_post = post_limit
+    input_channel = channel_name
+    today = datetime.today()
+    if date_start:
+        pass
+    else:
+        start_date = today - timedelta(days=6)
+        date_start = start_date.strftime("%Y-%m-%d")
+    if date_end:
+        pass
+    else:
+        end_date = today - timedelta(days=0)
+        date_end = end_date.strftime("%Y-%m-%d")
 
-#     try:
-#         scrapper.start()
-#     except Exception as err:
-#         logger.error(err)
+    try:
+        scrapper = InstagramScrapper(
+            bucket_name=INGESTION_BUCKET,
+            api_key=BRIGHTDATA_KEY_API,
+            conn_params=rds_credential,
+            input_channel=input_channel,
+            start_date=start_date,
+            end_date=end_date,
+            post_limit=num_of_post)
+        scrapper.start()
+        remove_task_from_queue.apply_async(kwargs={
+            'receipt_handle':receipt_handle,
+            'message_pathfile':message_pathfile})
+        return f"succes_scrapping::{input_channel}::message_path::{message_pathfile}::total_post{post_limit}"
+    except Exception as err:
+        logger.error(err)
+        raise err

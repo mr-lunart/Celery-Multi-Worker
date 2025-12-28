@@ -26,21 +26,12 @@ class Scrape_Youtube:
     YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch?v={}&ab_channel={}"
     GOOGLE_API_URL = "https://www.googleapis.com/youtube/v3/search?key={}&channelId={}&part=snippet,id&order=date&maxResults={}&publishedAfter={}T00:00:00.000Z"
     WEEKDAYS = {}
-    # WEEKDAYS = {
-    #     0: {'from_id': 1, 'to_id': 13},  # Monday
-    #     1: {'from_id': 14, 'to_id': 26},  # Tuesday
-    #     2: {'from_id': 27, 'to_id': 39},  # Wednesday
-    #     3: {'from_id': 40, 'to_id': 52},  # Thursday
-    #     4: {'from_id': 53, 'to_id': 65},  # Friday
-    #     5: {'from_id': 66, 'to_id': 78},  # Saturday
-    #     6: {'from_id': 79, 'to_id': 92}  # Sunday
-    # } # Commented out by Dmitri 2024-05-14
 
-    def __init__(self, weekday_index, developer_key, conn_params, input_channel, start_date, end_date, post_limit):
+    def __init__(self, developer_key, conn_params, input_channel, start_date, end_date, post_limit):
         """Scraper uses Google's Youtube Data API V3
         """
         
-        self.logger = generate_log_object(self.PLATFORM)
+        self.log = generate_log_object(self.PLATFORM, input_channel)
         
         self.today = datetime.today()
         # weekday_index = datetime.weekday(self.today) # Commented out by Dmitri 2024-05-14
@@ -60,7 +51,6 @@ class Scrape_Youtube:
         api_service_name = "youtube"
         api_version = "v3"
         
-        self.weekday_index = weekday_index
         self.developer_key = developer_key
 
         # Instanciate Google API Client
@@ -87,16 +77,17 @@ class Scrape_Youtube:
         # scrape channel and post
         scraping_status = self.scrape_channels_and_posts(earlier_data_channel, earlier_data_post)
         if scraping_status == None or scraping_status == False :
-            self.logger.error('failed scraping channel and posts')
-            return
+            self.log.error('failed scraping channel & posts')
+            raise Exception('failed scraping channel & posts')
+        
         current_date_path = datetime.now().strftime("%Y/%m/%d")
         s3_key = f"youtube/{current_date_path}/"
         self.save_to_s3(s3_key=s3_key)
-        self.logger.info('Scraping is finished')
+        self.log.info('Scraping is finished')
 
     def save_to_s3(self, s3_key:str):
         channel_name = self.platform_channel_name
-        timestamp_data = datetime.now().strftime("%Y%m%d%H%M%S")
+        timestamp_data = datetime.now().strftime("%Y%m%d")
         profile_name = f"youtube-profile-{channel_name}-{timestamp_data}.parquet"
         post_name = f"youtube-post-{channel_name}-{timestamp_data}.parquet"
        
@@ -109,7 +100,7 @@ class Scrape_Youtube:
             post.to_parquet(post_name, index=False)
             self.bucket.upload_file(post_name, f"{s3_key}{post_name}")
         except Exception as err:
-            self.logger.error(f"Error uploading data to S3:{err}")
+            self.log.error(f"Error uploading data to S3:{err}")
             raise err
         
         try:
@@ -118,16 +109,16 @@ class Scrape_Youtube:
                     os.remove(filepath)
                 else:
                     print(f'filepath {filepath} not found')
-            self.logger.info(f'file youtube {channel_name} parquet is deleted')
+            self.log.info(f'file youtube {channel_name} parquet is deleted')
         except Exception as err:
-            self.logger.error(f"Error deleting data:{err}")
+            self.log.error(f"Error deleting data:{err}")
             raise err
 
     def scrape_channels_and_posts(self, earlier_data_channel, earlier_data_post):
         try:
             channel_name = self.platform_channel_name
             youtube_channel_title = self.platform_channel_title 
-            self.logger.info(f"Scraping channels and videos from channel {channel_name}")
+            self.log.info(f"Scraping channels and videos from channel {channel_name}")
             response = self.youtube_client.search().list(
                     part="id,snippet",
                     type='video',
@@ -150,7 +141,7 @@ class Scrape_Youtube:
                         break
                         
             if channel_id is None:
-                self.logger.info(f"No Channel ID found for {channel_name}")
+                self.log.info(f"No Channel ID found for {channel_name}")
                 return
             
             # Get channel date
@@ -186,14 +177,14 @@ class Scrape_Youtube:
             channel_model.add_item(channel_data)
             self.channel_profile_metric = channel_model
             self.primary_keys[channel_id] = {'channel_input_id': self.channel_input_id}
-            self.logger.info(f"Channel {channel_name} saved")
+            self.log.info(f"Channel {channel_name} saved")
 
 
             # Get Video IDs  ################ this is the post scraper request
             api_url = self.GOOGLE_API_URL.format(self.developer_key, channel_id, self.post_limit, self.last_date.strftime("%Y-%m-%d"))
             video_items = requests.get(api_url).json().get('items', [])
             if not video_items:
-                self.logger.info("No videos found")
+                self.log.info("No videos found")
                 return
 
             # Get Video data ################ this is the post scraper process
@@ -201,7 +192,7 @@ class Scrape_Youtube:
             for video_item in video_items:
                 video_id = video_item.get('id', {}).get('videoId', None)
                 if video_id is None:
-                    self.logger.info("No Video ID found")
+                    self.log.info("No Video ID found")
                     continue
                     
                 video_info = self.api.get_video_by_id(video_id=video_id).items[0].to_dict()
@@ -260,10 +251,10 @@ class Scrape_Youtube:
                 
                 counter += 1
                 
-            self.logger.info(f"Saved {counter} video(s) for channel {channel_name}")
+            self.log.info(f"Saved {counter} video(s) for channel {channel_name}")
             return True
         except Exception as ex:
-            self.logger.error(f"Exception in {self.platform_channel_name} parsing channel/posts data: {ex}")
+            self.log.error(f"Exception in {self.platform_channel_name} parsing channel/posts data: {ex}")
 
     def get_earlier_data(self, input_channel:str):
         sql_query_channel = f"""

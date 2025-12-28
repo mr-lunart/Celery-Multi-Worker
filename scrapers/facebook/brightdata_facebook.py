@@ -4,6 +4,8 @@ import time
 
 from datetime import datetime
 from scrapers.utils.logger import generate_log_object
+from scrapers.utils.get_engine import get_engine
+from sqlalchemy import text
 import boto3
 import pandas as pd
 import os
@@ -11,13 +13,25 @@ import os
 
 class FacebookScrapper:
 
-    def __init__(self, bucket_name:str, api_key:str, param_input:dict) -> None:
+    def __init__(
+            self, 
+            bucket_name:str, 
+            api_key:str, 
+            conn_params:dict,
+            input_channel:str,
+            start_date:str, 
+            end_date:str,
+            post_limit:int 
+        ) -> None:
         self.api_key = api_key
-        self.request_input = {'input':[]}
-        
-        self.param_input = param_input
+        self.log = generate_log_object(self.platform_channel_name, input_channel)
+        self.input_channel = input_channel
+        self.start_date = start_date
+        self.end_date = end_date
+        self.post_limit = post_limit
         self.platform_channel_name = "facebook"
-        self.logger = generate_log_object(self.platform_channel_name)
+       
+        self.session = get_engine(conn_params)
         boto3_session = boto3.Session()
         s3_resource = boto3_session.resource(
             service_name='s3',
@@ -28,7 +42,16 @@ class FacebookScrapper:
         pass
 
     def start(self):
-        data_input = self.param_input
+        channel_credential = self.get_channel_name(self.input_channel)
+        self.platform_channel_name = channel_credential["channel_name"]
+
+        data_input = [{
+            "url":f"https://www.facebook.com/{self.platform_channel_name}/",
+            "num_of_posts":self.post_limit,
+            "start_date":self.start_date, # MM-DD-YYYY
+            "end_date":self.end_date # MM-DD-YYYY
+        }]
+        
         transformed_param = self.transform_input(param_input=data_input)
         _, result = self.sync_facebook_profile(transformed_param)
         if isinstance(result, dict):
@@ -45,7 +68,25 @@ class FacebookScrapper:
         current_date_path = datetime.now().strftime("%Y/%m/%d")
         s3_key = f"facebook/{current_date_path}/"
         self.save_upload_s3(s3_key=s3_key)
-  
+
+    def get_channel_name(self, input_channel):
+        sql_query = f"""
+        SELECT id, organisation, organisation_id, scrape_media, facebook_channel AS channel_name
+        FROM postgres.scraping.benchmarking_channel_input
+        WHERE organisation = '{input_channel}';
+        """
+        result = self.session.execute(text(sql_query))
+        rows = result.fetchone()
+        keys = result.keys()
+        data = self._fetchone_to_dict(keys, rows)
+        return data
+    
+    def _fetchone_to_dict(self, keys, rows):
+        """for internal use only."""
+        if rows:
+            return dict(zip(keys, rows))
+        return rows
+
     def transform_input(self, param_input:list[dict]) -> list[dict]:
         list_param_input = []
         for input_item in param_input:
@@ -68,7 +109,7 @@ class FacebookScrapper:
                     print("reload monitor 15s")
                     time.sleep(15)
         else:
-            self.logger.error("Error snapshot id not found")
+            self.log.error("Error snapshot id not found")
             raise Exception("Error snapshot id not found")
 
     def monitor_api(self, snapshot_id:str):
@@ -85,7 +126,7 @@ class FacebookScrapper:
             else:
                 return ""
         except requests.exceptions.RequestException as err:
-            self.logger.error(err)
+            self.log.error(err)
             raise err
         
     def snapshot_downloader(self, snapshot_id:str, filename:str):
@@ -104,7 +145,7 @@ class FacebookScrapper:
             print("Download snapshot completed successfully")
             
         except requests.exceptions.RequestException as err:
-            self.logger.error(err)
+            self.log.error(err)
             raise err
 
     def sync_facebook_post_by_url_profile(self, input_data:list[dict]):
@@ -161,7 +202,7 @@ class FacebookScrapper:
     
     def save_upload_s3(self, s3_key:str):
         channel_name = self.platform_channel_name
-        timestamp_data = datetime.now().strftime("%Y%m%d%H%M%S")
+        timestamp_data = datetime.now().strftime("%Y%m%d")
         profile_name = f"facebook-profile-{channel_name}-{timestamp_data}.parquet"
         post_name = f"facebook-post-{channel_name}-{timestamp_data}.parquet"
        
@@ -172,7 +213,7 @@ class FacebookScrapper:
             self.posts_metric.to_parquet(post_name, index=False)
             self.bucket.upload_file(post_name, f"{s3_key}{post_name}")
         except Exception as err:
-            self.logger.error(f"Error uploading data to S3:{err}")
+            self.log.error(f"Error uploading data to S3:{err}")
             raise err
         
         try:
@@ -181,9 +222,9 @@ class FacebookScrapper:
                     os.remove(filepath)
                 else:
                     print(f'filepath {filepath} not found')
-            self.logger.info(f'file facebook {channel_name} parquet is deleted')
+            self.log.info(f'file facebook {channel_name} parquet is deleted')
         except Exception as err:
-            self.logger.error(f"Error deleting data:{err}")
+            self.log.error(f"Error deleting data:{err}")
             raise err
 
     def write_json_file(self, status, data, filename):

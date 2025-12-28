@@ -22,22 +22,20 @@ class Scrape_TikTok():
     WEEKDAYS = {}
     
     def __init__(
-            self, 
-            weekday_index, 
+            self,
             api_key, 
             conn_params, 
             input_channel, 
             start_date, 
             end_date, 
-            post_limit,
-            logger
+            post_limit
         ):
         """ Scraper uses TikApi, TikTok's unofficial API https://tikapi.io/developer
             Separate requests made for fetching channel data and posts data.
             
             Intended to scrape TikTok on a weekly basis, posts tracked for 4 weeks (28 days) only.
         """
-        self.logger = generate_log_object(self.PLATFORM)
+        self.log = generate_log_object(self.PLATFORM, input_channel)
 
         self.input_channel = input_channel
         self.start_date = start_date
@@ -53,7 +51,6 @@ class Scrape_TikTok():
         self.today_date_string = self.today.strftime("%d%m%Y")
         self.primary_keys = {}
         
-        self.weekday_index = weekday_index
         self.api_key = api_key
         
         # Instanciate TikAPI
@@ -79,22 +76,22 @@ class Scrape_TikTok():
         # scrape channel and post
         data_channel = self.scrape_channels(earlier_data_channel)
         if data_channel == None and not isinstance(data_channel, dict):
-            self.logger.error('failed scraping channel information')
-            return
+            self.log.error('failed scraping channel information')
+            raise Exception('failed scraping channel information')
 
         status_posts = self.scrape_posts(data_channel, earlier_data_post)
         if status_posts == None or status_posts == False :
-            self.logger.error('failed scraping channel posts')
-            return
+            self.log.error('failed scraping channel posts')
+            raise Exception('failed scraping channel posts')
         
         current_date_path = datetime.now().strftime("%Y/%m/%d")
         s3_key = f"tiktok/{current_date_path}/"
         self.save_to_s3(s3_key=s3_key)
-        self.logger.info('Scraping is finished')
+        self.log.info('Scraping is finished')
 
     def save_to_s3(self, s3_key:str):
         channel_name = self.platform_channel_name
-        timestamp_data = datetime.now().strftime("%Y%m%d%H%M%S")
+        timestamp_data = datetime.now().strftime("%Y%m%d")
         profile_name = f"tiktok-profile-{channel_name}-{timestamp_data}.parquet"
         post_name = f"tiktok-post-{channel_name}-{timestamp_data}.parquet"
        
@@ -107,7 +104,7 @@ class Scrape_TikTok():
             post.to_parquet(post_name, index=False)
             self.bucket.upload_file(post_name, f"{s3_key}{post_name}")
         except Exception as err:
-            self.logger.error(f"Error uploading data to S3:{err}")
+            self.log.error(f"Error uploading data to S3:{err}")
             raise err
         
         try:
@@ -116,30 +113,30 @@ class Scrape_TikTok():
                     os.remove(filepath)
                 else:
                     print(f'filepath {filepath} not found')
-            self.logger.info(f'file tiktok {channel_name} parquet is deleted')
+            self.log.info(f'file tiktok {channel_name} parquet is deleted')
         except Exception as err:
-            self.logger.error(f"Error deleting data:{err}")
+            self.log.error(f"Error deleting data:{err}")
             raise err
 
     def scrape_channels(self, earlier_data_channel):
         # Scraping Channel
         channel = self.platform_channel_name
         channel_input_id = self.channel_input_id
-        self.logger.info(f"Scraping channel {channel}")
+        self.log.info(f"Scraping channel {channel}")
         first_scraped_at = None
         try:
             response = self.api.public.check(username=channel)
             json_obj = response.json()
             if json_obj.get('status') == 'success':
-                self.logger.info(f'Status API Channel {channel} success')
+                self.log.info(f'Status API Channel {channel} success')
             else:
-                self.logger.info(f'Status API Channel {channel} error')
+                self.log.info(f'Status API Channel {channel} error')
                 return
         except ValidationException as e:
-            self.logger.error(f"Error in {channel} Message: {e}, Error Field: {e.field}")
+            self.log.error(f"Error in {channel} Message: {e}, Error Field: {e.field}")
             return
         except ResponseException as e:
-            self.logger.error(f"Error in {channel} Message: {e}, Error Code: {e.response.status_code}")
+            self.log.error(f"Error in {channel} Message: {e}, Error Code: {e.response.status_code}")
             if '403' in str(e) or 'try again' in str(e).lower():
                 raise Exception(e)
             return
@@ -180,24 +177,24 @@ class Scrape_TikTok():
             channel_model.add_item(channel_data)
             self.channel_profile_metric = channel_model
             self.primary_keys[channel_id] = {'channel_input_id':channel_input_id}
-            self.logger.info(f"Channel {channel_model} saved")
+            self.log.info(f"Channel {channel_model} saved")
             return channel_data
         
         except Exception as ex:
-            self.logger.error(f"Exception in {channel} parsing channel data: {ex}")
+            self.log.error(f"Exception in {channel} parsing channel data: {ex}")
             return
         
     def scrape_posts(self, channel_data, earlier_data_post):
         # Scraping Posts
         secUid = channel_data.get("secUid", None)
         if secUid is None:
-            self.logger.info("Error: secUid is NULL")
+            self.log.info("Error: secUid is NULL")
             return False
         try:
             random_delay = random.choice([60, 120, 180])
-            self.logger.info(f"Delay {random_delay} sec before calling API Post endpoint")
+            self.log.info(f"Delay {random_delay} sec before calling API Post endpoint")
             time.sleep(random_delay)
-            self.logger.info(f"Scraping posts from channel {channel_data['channelName']}")
+            self.log.info(f"Scraping posts from channel {channel_data['channelName']}")
             # create post_models, post model handle all data post from parse post response
             self.posts_model = PostModel()
             try:
@@ -214,7 +211,7 @@ class Scrape_TikTok():
             except Exception as e:
                 if '403' in str(e) or 'try again' in str(e).lower():
                     random_delay = random.choice([300, 310, 320])
-                    self.logger.info(f"Delay {random_delay} sec before re-calling API Post endpoint")
+                    self.log.info(f"Delay {random_delay} sec before re-calling API Post endpoint")
                     time.sleep(random_delay)
                     response = self.api.public.posts(secUid=secUid, count=self.post_limit)
                     while(response):
@@ -226,17 +223,17 @@ class Scrape_TikTok():
                     self.channel_posts_metric = self.posts_model
                     return True
         
-            self.logger.info(f"Saved {self.counter} post(s) for channel {channel_data['channelName']}")
+            self.log.info(f"Saved {self.counter} post(s) for channel {channel_data['channelName']}")
             
             
         except ValidationException as e:
             error_message = f"Error in validation {channel_data['channelName']} Message: {e}, Error Field: {e.field}"
-            self.logger.error(error_message)
+            self.log.error(error_message)
             return False
 
         except ResponseException as e:
             error_message = f"Error in response {channel_data['channelName']} Message: {e}, Error Code: {e.response.status_code}"
-            self.logger.error(error_message)
+            self.log.error(error_message)
             return False
 
     def parse_post_response(self, json_obj, earlier_data):
@@ -335,7 +332,7 @@ class Scrape_TikTok():
                     break
                 
             except Exception as ex:
-                self.logger.error(f"Exception in parsing post data: {ex}")
+                self.log.error(f"Exception in parsing post data: {ex}")
             
         return is_data
     

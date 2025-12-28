@@ -28,7 +28,7 @@ class Scrape_Twitter:
             https://developer.twitter.com/en/docs/twitter-api
         """
 
-        self.logger = generate_log_object(self.PLATFORM)
+        self.log = generate_log_object(self.PLATFORM,input_channel)
         
         # Settings
         self.primary_keys = {}
@@ -62,17 +62,17 @@ class Scrape_Twitter:
         # Scraping Channels and Posts
         status = self.scrape_channels_posts(earlier_data_channel, earlier_data_post)
         if status == None or status == False :
-            self.logger.error('failed scraping channel posts')
-            return
+            self.log.error('failed scraping channel & posts')
+            raise Exception('failed scraping channel & posts')
 
         current_date_path = datetime.now().strftime("%Y/%m/%d")
         s3_key = f"twitter/{current_date_path}/"
         self.save_to_s3(s3_key=s3_key)
-        self.logger.info('Scraping is finished')
+        self.log.info('Scraping is finished')
 
     def save_to_s3(self, s3_key:str):
         channel_name = self.platform_channel_name
-        timestamp_data = datetime.now().strftime("%Y%m%d%H%M%S")
+        timestamp_data = datetime.now().strftime("%Y%m%d")
         profile_name = f"twitter-profile-{channel_name}-{timestamp_data}.parquet"
         post_name = f"twitter-post-{channel_name}-{timestamp_data}.parquet"
        
@@ -85,7 +85,7 @@ class Scrape_Twitter:
             post.to_parquet(post_name, index=False)
             self.bucket.upload_file(post_name, f"{s3_key}{post_name}")
         except Exception as err:
-            self.logger.error(f"Error uploading data to S3:{err}")
+            self.log.error(f"Error uploading data to S3:{err}")
             raise err
         
         try:
@@ -94,9 +94,9 @@ class Scrape_Twitter:
                     os.remove(filepath)
                 else:
                     print(f'filepath {filepath} not found')
-            self.logger.info(f'file twitter {channel_name} parquet is deleted')
+            self.log.info(f'file twitter {channel_name} parquet is deleted')
         except Exception as err:
-            self.logger.error(f"Error deleting data:{err}")
+            self.log.error(f"Error deleting data:{err}")
             raise err
 
     def scrape_channels_posts(self, earlier_data_channel, earlier_data_post):
@@ -147,17 +147,17 @@ class Scrape_Twitter:
                 self.channel_profile_metric = channel_model
 
                 self.primary_keys[channel_id] = {'channel_input_id': channel_input_id}
-                self.logger.info(f"Channel {item.get('username', None)} - {item.get('name', None)} saved")
+                self.log.info(f"Channel {item.get('username', None)} - {item.get('name', None)} saved")
                 break # Only one channel expected
 
         except Exception as ex:
             message = f"Exception in parsing channel data: {ex}"
-            self.logger.error(message)
+            self.log.error(message)
             raise Exception(message)
 
 
         # post scrapper ############# 
-        self.logger.info(f"Scraping posts from channel {self.platform_channel_name}")
+        self.log.info(f"Scraping posts from channel {self.platform_channel_name}")
         url = self.create_url_posts(channel_id)
         
         next_token = "token"
@@ -167,26 +167,26 @@ class Scrape_Twitter:
 
         while next_token is not None: # Looping API Twitter using pagination
             random_delay = random.choice([45, 50, 55])
-            self.logger.info(f"Delay {random_delay} sec before calling API Paging endpoint")
+            self.log.info(f"Delay {random_delay} sec before calling API Paging endpoint")
             time.sleep(random_delay)
 
             if iteration == 0:
                 next_token = None
             iteration += 1
-            self.logger.info(f"Fetching posts in channel {self.platform_channel_name} with page iteration number {iteration}")
+            self.log.info(f"Fetching posts in channel {self.platform_channel_name} with page iteration number {iteration}")
             
             params = self.get_params(next_token)
             json_response = self.connect_to_endpoint(url=url, params=params, channel_name=self.platform_channel_name)
             if 'error' in str(json_response) and 'usage cap exceeded' in str(json_response).lower(): # ERROR USAGE CAP MONTLY LIMIT
                 error_message = f"License Error when get posts from channel ID {channel_id} with {json_response}"
-                self.logger.error(error_message)
+                self.log.error(error_message)
                 raise Exception(error_message)
             elif 'error' in str(json_response) and 'usage cap exceeded' not in str(json_response).lower(): # OTHER ERRORS
                 error_message = f"Error get posts from channel ID {channel_id} with {json_response}"
-                self.logger.error(error_message)
+                self.log.error(error_message)
                 continue
             elif not json_response.get("data", None): # NO DATA IN RESPONSE JSON
-                self.logger.info(f"No response received for channel ID {channel_id}")
+                self.log.info(f"No response received for channel ID {channel_id}")
                 break
 
             items = json_response['data']
@@ -248,10 +248,10 @@ class Scrape_Twitter:
                     
                     self.posts_model.add_item(post_data)
                     counter_media += 1
-                    self.logger.info(f"Media Number: {counter_media} Post ID: {post_id} from Channel: {self.platform_channel_name}")
+                    self.log.info(f"Media Number: {counter_media} Post ID: {post_id} from Channel: {self.platform_channel_name}")
 
                 except Exception as ex:
-                    self.logger.error(f"Exception in {self.platform_channel_name} parsing posts data: {ex}")
+                    self.log.error(f"Exception in {self.platform_channel_name} parsing posts data: {ex}")
 
                 if counter_media >= self.post_limit: # Breaking from token pagination iteration if media_count is greater equal to threshold
                     break
@@ -259,7 +259,7 @@ class Scrape_Twitter:
                 break
         
         self.channel_posts_metric = self.posts_model
-        self.logger.info(f"Saved {counter_media} post(s) for channel {self.platform_channel_name}")
+        self.log.info(f"Saved {counter_media} post(s) for channel {self.platform_channel_name}")
         return True
         
     def create_url_channels(self, channel_name):
@@ -312,13 +312,13 @@ class Scrape_Twitter:
         """ Method for creating a connection to Twitter API v2 endpoint.
         """
         response = requests.request("GET", url, params=params, auth=self.bearer_oauth)
-        # self.logger.info(f"Status Code: {response.status_code}{' channel: '+channel_name if channel_name else ''}")
+        # self.log.info(f"Status Code: {response.status_code}{' channel: '+channel_name if channel_name else ''}")
         
         if response.status_code == 429:
-                self.logger.info(f"Waiting 300 seconds before re-calling the API endpoint due to error: {response.status_code} {response.text}")
+                self.log.info(f"Waiting 300 seconds before re-calling the API endpoint due to error: {response.status_code} {response.text}")
                 sleep(300)
                 response = requests.request("GET", url, params=params, auth=self.bearer_oauth)
-                # self.logger.info(f"Second Attempt Status Code: {response.status_code}{' channel: '+channel_name if channel_name else ''} Message: {response.text}")
+                # self.log.info(f"Second Attempt Status Code: {response.status_code}{' channel: '+channel_name if channel_name else ''} Message: {response.text}")
             
         if response.status_code != 200:
             return {'error_code': response.status_code, 'error_message': response.text}

@@ -4,19 +4,31 @@ import time
 
 from datetime import datetime
 from scrapers.utils.logger import generate_log_object
+from sqlalchemy import text
 import boto3
 import pandas as pd
 import os
 
 class InstagramScrapper:
 
-    def __init__(self, bucket_name:str, api_key:str, param_input:dict) -> None:
+    def __init__(
+            self, 
+            bucket_name:str, 
+            api_key:str,
+            conn_params:dict,
+            input_channel:str,
+            start_date:str, 
+            end_date:str,
+            post_limit:int) -> None:
         self.api_key = api_key
         self.request_input = {'input':[]}
 
-        self.param_input = param_input
+        self.input_channel = input_channel
+        self.start_date = start_date
+        self.end_date = end_date
+        self.post_limit = post_limit
         self.platform_channel_name = "instagram"
-        self.logger = generate_log_object(self.platform_channel_name)
+        self.log = generate_log_object(self.platform_channel_name, input_channel)
         boto3_session = boto3.Session()
         s3_resource = boto3_session.resource(
             service_name='s3',
@@ -27,7 +39,17 @@ class InstagramScrapper:
         pass
 
     def start(self):
-        data_input = self.param_input
+        channel_credential = self.get_channel_name(self.input_channel)
+        self.platform_channel_name = channel_credential["channel_name"]
+
+        data_input = [{
+            "url":f"https://www.instagram.com/{self.platform_channel_name}/",
+            "num_of_posts":self.post_limit,
+            "start_date":self.start_date, # MM-DD-YYYY
+            "end_date":self.end_date, # MM-DD-YYYY
+            "post_type":"" # 'Post' / 'Reel'
+        }]
+
         transformed_param = self.transform_input(param_input=data_input)
         _, result = self.sync_facebook_profile(transformed_param)
         if isinstance(result, dict):
@@ -44,6 +66,24 @@ class InstagramScrapper:
         current_date_path = datetime.now().strftime("%Y/%m/%d")
         s3_key = f"instagram/{current_date_path}/"
         self.save_upload_s3(s3_key=s3_key)
+
+    def get_channel_name(self, input_channel):
+        sql_query = f"""
+        SELECT id, organisation, organisation_id, scrape_media, facebook_channel AS channel_name
+        FROM postgres.scraping.benchmarking_channel_input
+        WHERE organisation = '{input_channel}';
+        """
+        result = self.session.execute(text(sql_query))
+        rows = result.fetchone()
+        keys = result.keys()
+        data = self._fetchone_to_dict(keys, rows)
+        return data
+    
+    def _fetchone_to_dict(self, keys, rows):
+        """for internal use only."""
+        if rows:
+            return dict(zip(keys, rows))
+        return rows
 
     def sync_instagram_post(self, input_data:list[dict]):
         self.request_input['input'] = input_data
@@ -149,7 +189,7 @@ class InstagramScrapper:
                     print("reload monitor 15s")
                     time.sleep(15)
         else:
-            self.logger.error("Error snapshot id not found")
+            self.log.error("Error snapshot id not found")
             raise Exception("Error snapshot id not found")
 
     def monitor_api(self, snapshot_id:str):
@@ -165,9 +205,9 @@ class InstagramScrapper:
                 return snapshot_id
             else:
                 return ""
-        except requests.exceptions.RequestException as e:
-            self.logger.error(e)
-            raise e
+        except requests.exceptions.RequestException as err:
+            self.log.error(err)
+            raise err
         
     def snapshot_downloader(self, snapshot_id:str, filename:str):
         url = f'https://api.brightdata.com/datasets/v3/snapshot/{snapshot_id}'
@@ -184,13 +224,13 @@ class InstagramScrapper:
                 self.posts_metric = full_dataset
             print("Download snapshot completed successfully")
             
-        except requests.exceptions.RequestException as e:
-            self.logger.error(e)
-            raise e
+        except requests.exceptions.RequestException as err:
+            self.log.error(err)
+            raise err
 
     def save_upload_s3(self, s3_key:str):
         channel_name = self.platform_channel_name
-        timestamp_data = datetime.now().strftime("%Y%m%d%H%M%S")
+        timestamp_data = datetime.now().strftime("%Y%m%d")
         profile_name = f"instagram-profile-{channel_name}-{timestamp_data}.parquet"
         post_name = f"instagram-post-{channel_name}-{timestamp_data}.parquet"
        
@@ -201,8 +241,8 @@ class InstagramScrapper:
             self.posts_metric.to_parquet(post_name, index=False)
             self.bucket.upload_file(post_name, f"{s3_key}{post_name}")
         except Exception as err:
-            self.logger.error(f"Error uploading data to S3:{err}")
-            return
+            self.log.error(f"Error uploading data to S3:{err}")
+            raise err
         
         try:
             for filepath in (profile_name, post_name):
@@ -210,10 +250,10 @@ class InstagramScrapper:
                     os.remove(filepath)
                 else:
                     print(f'filepath {filepath} not found')
-            self.logger.info(f'file instagram {channel_name} parquet is deleted')
+            self.log.info(f'file instagram {channel_name} parquet is deleted')
         except Exception as err:
-            self.logger.error(f"Error deleting data:{err}")
-            return
+            self.log.error(f"Error deleting data:{err}")
+            raise err
 
     def transform_to_pandas(self, response):
         full_dataset = []
