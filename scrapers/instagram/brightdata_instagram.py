@@ -69,7 +69,7 @@ class InstagramScrapper:
 
     def get_channel_name(self, input_channel):
         sql_query = f"""
-        SELECT id, organisation, organisation_id, scrape_media, facebook_channel AS channel_name
+        SELECT id, organisation, organisation_id, scrape_media, instagram_channel AS channel_name
         FROM postgres.scraping.benchmarking_channel_input
         WHERE organisation = '{input_channel}';
         """
