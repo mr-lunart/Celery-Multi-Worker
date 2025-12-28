@@ -4,6 +4,7 @@ import time
 
 from datetime import datetime
 from scrapers.utils.logger import generate_log_object
+from scrapers.utils.get_engine import get_engine
 from sqlalchemy import text
 import boto3
 import pandas as pd
@@ -28,6 +29,7 @@ class InstagramScrapper:
         self.end_date = end_date
         self.post_limit = post_limit
         self.platform_channel_name = "instagram"
+        self.session = get_engine(conn_params)
         self.log = generate_log_object(self.platform_channel_name, input_channel)
         boto3_session = boto3.Session()
         s3_resource = boto3_session.resource(
