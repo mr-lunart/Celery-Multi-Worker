@@ -1,12 +1,12 @@
 [Unit]
 Description=Celery Worker Service
-After=network.target
+After=network.target celeryd.service
 
 [Service]
-Type=forking
+Type=simple
 EnvironmentFile=/home/ubuntu/Celery-Multi-Worker/config/celeryd.conf
 WorkingDirectory=/home/ubuntu/Celery-Multi-Worker
-ExecStart=/bin/sh -c 'celery --broker=redis://127.0.0.1:6379/0 flower'
+ExecStart=/bin/sh -c '${CELERY_BIN} --broker=redis://127.0.0.1:6379/0 flower'
 Restart=always
 
 [Install]
