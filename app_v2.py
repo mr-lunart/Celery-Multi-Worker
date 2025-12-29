@@ -266,8 +266,8 @@ def instagram_scraper(self, channel_name:str, date_start:str, date_end:str, rece
             api_key=BRIGHTDATA_KEY_API,
             conn_params=rds_credential,
             input_channel=input_channel,
-            start_date=start_date,
-            end_date=end_date,
+            start_date=date_start,
+            end_date=date_end,
             post_limit=num_of_post)
         scrapper.start()
         remove_task_from_queue.apply_async(kwargs={
